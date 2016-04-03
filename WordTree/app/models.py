@@ -17,7 +17,7 @@ class Menu(models.Model):
         return u'{ id: %d, name: "%s", tag: "%s" }' % (self.id, self.name, self.tag)
 
 class Submenu(models.Model):
-    child = models.ForeignKey(Menu, related_name='children', on_delete=models.DO_NOTHING)
+    child = models.OneToOneField(Menu, related_name='children') # ForeignKey(Menu, related_name='children', on_delete=models.DO_NOTHING)
     child.primary_key = True
     parent = models.OneToOneField(Menu)
     ordinal = models.IntegerField(default=0)
