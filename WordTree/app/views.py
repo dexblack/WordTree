@@ -8,6 +8,7 @@ from django.template import RequestContext
 from django.db.utils import IntegrityError
 from datetime import datetime
 from app.models import Menu, Submenu
+from .forms import AddMenu
 
 def render_app_page(request, template_name, **kwargs):
     kwargs["context_instance"]["this_app_name"] = "RU App Editor prototype"
@@ -57,7 +58,7 @@ def about(request):
 
 
 def rootmenu(request):
-    return redirect("menu", menu="1", child="")
+    return redirect("menu/", menu="1", child="")
 
 def menu(request, menu, child):
     """Renders the given menu item and shows links for the children"""
@@ -79,9 +80,9 @@ def menu(request, menu, child):
         if chosenid == "1":
             # Initialise the root menu given that it doesn't exist yet
             try:
-                rootmenu = Menu(name='RU App', tag='root', data='')
+                rootmenu = Menu(name='RU App', data='')
                 rootmenu.save()
-                firstmenu = Menu(name='First', tag='first', data='')
+                firstmenu = Menu(name='First', data='')
                 firstmenu.save()
                 submenu = Submenu(parent=rootmenu, ordinal=1, child=firstmenu)
                 submenu.save()
@@ -94,18 +95,17 @@ def menu(request, menu, child):
 
     # and its children
     class ChildMenu:
-        def __init__(self, id, parent, name, tag, data):
+        def __init__(self, id, parent, name, data):
             self.id = id
             self.parent = parent
             self.name = name
-            self.tag = tag
             self.data = data
 
     submenus = Submenu.objects.filter(parent=chosenmenu).order_by('ordinal')
     children = []
     for submenu in submenus:
         menuitem = Menu.objects.get(id=submenu.child.id)
-        childmenu = ChildMenu(id=submenu.child.id, parent=request.get_raw_uri(), name=menuitem.name, tag=menuitem.tag, data=menuitem.data)
+        childmenu = ChildMenu(id=submenu.child.id, parent=request.get_raw_uri(), name=menuitem.name, data=menuitem.data)
         children.append(childmenu)
 
     # Package the results in the appropriate structures
@@ -118,6 +118,7 @@ def menu(request, menu, child):
                 'title' : chosenmenu.name,
                 'parent' : "http://" + request.get_host() + '/menu/' + '/'.join(menupath),
                 'children' : children,
+                'add' : "http://" + request.get_host() + '/menu/add/' + '/'.join(menupath),
             }
         )
     )

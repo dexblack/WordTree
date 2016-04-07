@@ -19,7 +19,6 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=50)),
-                ('tag', models.CharField(db_index=True, max_length=25)),
                 ('data', models.TextField(blank=True)),
             ],
         ),
@@ -28,7 +27,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('child', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, primary_key=True, related_name='children', serialize=False, to='app.Menu')),
                 ('ordinal', models.IntegerField(db_index=True, default=0)),
-                ('parent', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='app.Menu')),
+                ('parent', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='app.Menu')),
             ],
         ),
     ]

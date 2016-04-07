@@ -9,17 +9,15 @@ from django.db import models
 class Menu(models.Model):
     #id = models.AutoField() # Implicitly added for all modelled objects
     name = models.CharField(max_length=50)
-    tag = models.CharField(max_length=25)
-    tag.db_index = True
     data = models.TextField(blank=True)
 
     def __unicode__(self):
-        return u'{ id: %d, name: "%s", tag: "%s" }' % (self.id, self.name, self.tag)
+        return u'{ id: %d, name: "%s"" }' % (self.id, self.name)
 
 class Submenu(models.Model):
     child = models.OneToOneField(Menu, related_name='children') # ForeignKey(Menu, related_name='children', on_delete=models.DO_NOTHING)
     child.primary_key = True
-    parent = models.OneToOneField(Menu)
+    parent = models.ForeignKey(Menu)
     ordinal = models.IntegerField(default=0)
     ordinal.db_index = True
 
