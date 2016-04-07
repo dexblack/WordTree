@@ -7,7 +7,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.utils.translation import ugettext_lazy as _
 
 class BootstrapAuthenticationForm(AuthenticationForm):
-    """Authentication form which uses boostrap CSS."""
+    """Authentication form which uses bootstrap CSS."""
     username = forms.CharField(max_length=254,
                                widget=forms.TextInput({
                                    'class': 'form-control',
@@ -16,3 +16,9 @@ class BootstrapAuthenticationForm(AuthenticationForm):
                                widget=forms.PasswordInput({
                                    'class': 'form-control',
                                    'placeholder':'Password'}))
+
+class AddMenu(forms.Form):
+    parent = forms.CharField(label='Parent menu')
+    name = forms.CharField(label='Menu word', max_length=50)
+    #data = forms.CharField(label='Other data', widget=forms.Textarea)
+

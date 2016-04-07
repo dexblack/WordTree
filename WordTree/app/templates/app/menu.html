@@ -1,11 +1,14 @@
 {% extends "app/layout.html" %}
-
+{% load staticfiles %}
 {% block content %}
 
 <h2>{{ title }}.</h2>
 <h3><a href="{{ parent }}">^up</a></h3>
 
 {% for child in children %}
-<ul>{{ child.id }}. <a href="{{ child.id }}"> {{ child.name }}</a> ({{ child.tag }})</ul>
+<ul>{{ child.id }}. <a href="{{ child.id }}"> {{ child.name }}</a></ul>
 {% endfor %}
+
+<a href="{{ add }}"><img src="{% static 'app/images/add_48.png' %}" /></a>
+
 {% endblock %}

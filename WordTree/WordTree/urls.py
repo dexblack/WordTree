@@ -6,7 +6,7 @@ from datetime import datetime
 from django.conf.urls import url
 from django.contrib.auth.views import login, logout
 from app.forms import BootstrapAuthenticationForm
-from app.views import home, contact, about, rootmenu, menu
+from app.views import home, contact, about, rootmenu, menu, menu_add_root, menu_add
 
 # Uncomment the next lines to enable the admin:
 # from django.conf.urls import include
@@ -18,6 +18,8 @@ urlpatterns = [
     url(r'^$', home, name='home'),
     url(r'^menu/$', rootmenu),
     url(r'^menu/(?P<menu>[\d/]*)(?P<child>\d{1,2})/$', menu, name='menu'),
+    url(r'^menu/add/$', menu_add_root, name='menu_add_root'),
+    url(r'^menu/add/(?P<menu>[\d/]*)(?P<child>\d{1,2})/$', menu_add, name='menu_add'),
     url(r'^contact$', contact, name='contact'),
     url(r'^about', about, name='about'),
     url(r'^login/$',
