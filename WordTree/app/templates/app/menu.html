@@ -3,12 +3,13 @@
 {% block content %}
 
 <h2>{{ title }}.</h2>
-<h3><a href="{{ parent }}">^up</a></h3>
+<a href="{{ parent }}"><img src="{% static 'app/images/UpLeft.png' %}" width="24px" /></a>
 
-{% for child in children %}
-<ul>{{ child.id }}. <a href="{{ child.id }}"> {{ child.name }}</a></ul>
+<ol>{% for child in children %}
+<li><a href="{{ child.id }}"> {{ child.name }} [id={{ child.id }}]</a>
+&nbsp;&nbsp;<a href="{{ child.id }}/delete"><img src="{% static 'app/images/Minus.png' %}" width="15px" /></a></li>
 {% endfor %}
-
-<a href="{{ add }}"><img src="{% static 'app/images/add_48.png' %}" /></a>
+</ol>
+<a href="add"><img src="{% static 'app/images/Add_48.png' %}" width="24px" /></a>
 
 {% endblock %}
