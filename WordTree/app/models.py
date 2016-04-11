@@ -15,11 +15,9 @@ class Menu(models.Model):
         return u'{ id: %d, name: "%s"" }' % (self.id, self.name)
 
 class Submenu(models.Model):
-    child = models.OneToOneField(Menu, related_name='children') # ForeignKey(Menu, related_name='children', on_delete=models.DO_NOTHING)
+    child = models.OneToOneField(Menu, related_name='children')
     child.primary_key = True
     parent = models.ForeignKey(Menu)
-    ordinal = models.IntegerField(default=0)
-    ordinal.db_index = True
 
     def __unicode__(self):
-        return u'{ ordinal: %d, child_id: %d, parent_id: %d }' % (self.ordinal, self.child.id, self.parent.id)
+        return u'{ parent_id: {0}, child_id: {1} }' % (self.parent.id, self.child.id)

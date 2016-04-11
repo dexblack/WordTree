@@ -26,7 +26,6 @@ class Migration(migrations.Migration):
             name='Submenu',
             fields=[
                 ('child', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, primary_key=True, related_name='children', serialize=False, to='app.Menu')),
-                ('ordinal', models.IntegerField(db_index=True, default=0)),
                 ('parent', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='app.Menu')),
             ],
         ),
