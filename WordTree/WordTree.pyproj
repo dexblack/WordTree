@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="app\static\app\images\add_48.png" />
+    <Content Include="app\templates\app\menu_deleted.html" />
     <Content Include="app\templates\app\menu_added.html" />
     <Content Include="app\templates\app\menu_add.html" />
     <Content Include="app\templates\app\menu.html" />

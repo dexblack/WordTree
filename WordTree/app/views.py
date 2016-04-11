@@ -7,14 +7,17 @@ from django.http import HttpRequest, Http404
 from django.template import RequestContext
 from django.db.utils import IntegrityError
 from django.db import transaction
+import logging
 
 from datetime import datetime
 from app.models import Menu, Submenu
 from .forms import AddMenu
 
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
 
 def render_app_page(request, template_name, **kwargs):
-    kwargs["context_instance"]["this_app_name"] = "RU App Editor prototype"
+    kwargs["context_instance"]["this_app_name"] = "Editor prototype"
     template_name = "app/" + template_name
     return render(request, template_name, **kwargs)
 
@@ -59,57 +62,74 @@ def about(request):
         })
     )
 
+class ChildMenu:
+    def __init__(self, id, parent, name, data):
+        self.id = id
+        self.parent = parent
+        self.name = name
+        self.data = data
+
+    def __str__(self):
+        return "{{'id':{0}, 'parent':{1}, 'name':{2}, 'data':{3} }}".format(self.id, self.parent, self.name, self.data if self.data else "")
+def gather_children(parentid):
+    """ Returns a list of ChildMenu objects matching the children of 'node' """
+    # parentid must be > 0.
+    if parentid < 1:
+        return []
+    # parentid must correspond to an existing menu item.
+    parentmenu = Menu.objects.get(id=parentid)
+
+    children = []
+    submenus = Submenu.objects.filter(parent=parentid).order_by('child_id')
+    for submenu in submenus:
+        menu = Menu.objects.get(id=submenu.child.id)
+        childmenu = ChildMenu(id=int(menu.id), parent=int(parentmenu.id), name=menu.name, data=menu.data)
+        children.append(childmenu)
+
+    return children
+
 
 def rootmenu(request):
-    return redirect("menu/", menu="1", child="")
+    return redirect("/menu/1", menu="1", child="")
 
 def menu(request, menu, child):
     """Renders the given menu item and shows links for the children"""
     assert isinstance(request, HttpRequest)
-    #raise Http404("Debugging: " + request.get_raw_uri() + " " + menu + " " + child)
+    #raise Http404("Debugging: " + request.get_raw_uri() + " menu:" + menu + " child:" + child)
     chosenmenu = None
     menupath = []
     try:
         # Retrieve the matching submenu
         menupath = menu.split("/")[0:-1]
 
-        chosenid = child if child else menu
-        chosenmenu = Menu.objects.get(id=int(chosenid))
+        # This is a consequence of the regex matching algorithm
+        # used when parsing the application urls collection.
+        chosenid = int(child if child else menu)
+
+        chosenmenu = Menu.objects.get(id=chosenid)
 
     except ValueError:
         raise Http404("No menu found at: " + request.get_raw_uri() + "menu: " + menu + " child:" + (child if child else ""))
 
     except Menu.DoesNotExist:
-        if chosenid == "1":
+        if chosenid == 1:
             # Initialise the root menu given that it doesn't exist yet
             try:
-                rootmenu = Menu(name='RU App', data='')
+                rootmenu = Menu(name='Menu', data='')
                 rootmenu.save()
                 firstmenu = Menu(name='First', data='')
                 firstmenu.save()
-                submenu = Submenu(parent=rootmenu, ordinal=1, child=firstmenu)
+                submenu = Submenu(parent=rootmenu, child=firstmenu)
                 submenu.save()
                 chosenmenu = rootmenu
 
             except IntegrityError:
                 raise Http404("Database initialisation error")
         else:
-            raise Http404("Invalid menu: '" + menu)
+            raise Http404("Invalid menu: '" + menu + "'")
 
     # and its children
-    class ChildMenu:
-        def __init__(self, id, parent, name, data):
-            self.id = id
-            self.parent = parent
-            self.name = name
-            self.data = data
-
-    submenus = Submenu.objects.filter(parent=chosenmenu).order_by('ordinal')
-    children = []
-    for submenu in submenus:
-        menuitem = Menu.objects.get(id=submenu.child.id)
-        childmenu = ChildMenu(id=submenu.child.id, parent=request.get_raw_uri(), name=menuitem.name, data=menuitem.data)
-        children.append(childmenu)
+    children = gather_children(chosenmenu.id)
 
     # Package the results in the appropriate structures
     return render_app_page(
@@ -119,9 +139,9 @@ def menu(request, menu, child):
             request,
             {
                 'title' : chosenmenu.name,
-                'parent' : "http://" + request.get_host() + '/menu/' + '/'.join(menupath),
+                'parent' : '/menu/' + '/'.join(menupath),
                 'children' : children,
-                'add' : "http://" + request.get_host() + '/menu/add/' + '/'.join(menupath),
+                'delete' : '/menu/' + '/'.join(menupath) + '/' + child + '/delete',
             }
         )
     )
@@ -130,6 +150,7 @@ def menu_add_root(request):
     return menu_add(request, menu="1", child="")
 
 def menu_add(request, menu, child):
+    #raise Http404("Debugging: " + request.get_raw_uri() + " menu:" + menu + " child:" + child)
     # if this is a POST request we need to process the form data
     if request.method == 'POST':
         # create a form instance and populate it with data from the request
@@ -139,16 +160,89 @@ def menu_add(request, menu, child):
             name = form.cleaned_data['name']
 
             parentmenu = Menu.objects.get(id=int(parentid))
-            childcount = len(Submenu.objects.filter(parent=parentmenu)) + 1
 
             with transaction.atomic():
                 newmenu = Menu(name=name, data='')
                 newmenu.save()
-                submenu = Submenu(parent=parentmenu, ordinal=childcount, child=newmenu)
+                submenu = Submenu(parent=parentmenu, child=newmenu)
                 submenu.save()
 
             return render(request, 'app/menu_added.html')
     else:
-        form = AddMenu({'parent': (menu or '1'), 'name':'Add word'})
+        # Retrieve the matching submenu
+        menupath = menu.split("/")[0:-1]
+        menupath = menupath[len(menupath)-1] if menupath else None 
+        menupath = child or menupath or '1'
+        form = AddMenu({'parent': menupath, 'name':'Add word'})
 
     return render(request, 'app/menu_add.html', {'form': form})
+
+#def menu_delete_root(request):
+    ## Can't delete the root menu so this should never happen
+    #return rootmenu(request)
+
+
+def gather_descendants(parentid, descendants, depth = -1):
+    """ Post-order traversal of the tree """
+    # Don't include the parentid in the returned collection.
+    # depth: -1 implies all children, 0 is finished.
+    if depth == 0:
+       return
+
+    depth = (depth if depth > 0 else 1) - 1
+    # Gather the next descendants.
+    children = gather_children(parentid)
+    for child in children:
+        gather_descendants(child.id, descendants, depth)
+        # The order of operations here make descendants a post order list.
+        # The sequence will then be suitable for deleting children first.
+        descendants.append(child)
+
+def gather_all_descendants(chosenid):
+    descendants = []
+    gather_descendants(chosenid, descendants, -1)
+    return descendants
+
+
+def menu_delete(request, menu, child):
+    """ Removes the given menu and all its children """
+    #raise Http404("Debugging: " + request.get_raw_uri() + " menu:" + menu + " child:" + child)
+    assert isinstance(request, HttpRequest)
+    logger.info("menu_delete('{0}', menu={1}, child={2})".format(request.get_raw_uri(), menu, child))
+    chosenmenu = None
+    try:
+        chosenid = int(child if child else menu)
+        chosenmenu = Menu.objects.get(id=chosenid)
+
+    except ValueError:
+        raise Http404("No menu matching: " + request.get_raw_uri() + "menu: " + menu + " child:" + (child if child else ""))
+
+    except Menu.DoesNotExist:
+        raise Http404("Invalid menu: '" + menu)
+
+    # and delete all its descendants
+    descendants = gather_all_descendants(chosenid)
+    menupath = menu.split("/")[0:-1]
+    menupath = menupath[len(menupath)-1] if menupath else '1'
+
+    todie = ChildMenu(int(chosenmenu.id), int(menupath), chosenmenu.name, chosenmenu.data)
+    descendants.append(todie)
+
+    with transaction.atomic():
+        for descendant in descendants:
+            # First find the parent Menu
+            parentmenu = Menu.objects.get(id=descendant.parent)
+            # Select the matching Submenu record.
+            submenus = Submenu.objects.filter(parent=parentmenu, child_id=descendant.id)
+            # There should only be one.
+            assert(len(submenus)==1)
+            submenu = submenus[0]
+            logger.info('Deleting Submenu: parent:{0} id:{1}'.format(parentmenu.id, submenu.child.id))
+            submenu.delete()
+            # Select the matching Menu record for that child.
+            themenu = Menu.objects.get(id=descendant.id)
+            logger.info('Deleting Menu: {0} {1}'.format(themenu.id, themenu.name))
+            # Again there ought to be only one.
+            themenu.delete()
+
+    return render(request, 'app/menu_deleted.html')
