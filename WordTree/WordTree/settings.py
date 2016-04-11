@@ -2,7 +2,7 @@
 Django settings for WordTree project.
 """
 
-from os import path
+from os import path, sys
 PROJECT_ROOT = path.dirname(path.abspath(path.dirname(__file__)))
 
 DEBUG = True
@@ -155,6 +155,11 @@ LOGGING = {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
+        },
+        'console':{
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
         }
     },
     'loggers': {
@@ -163,6 +168,11 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
+        'app': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        }
     }
 }
 
