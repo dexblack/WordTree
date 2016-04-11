@@ -6,9 +6,12 @@ from django.shortcuts import render, redirect
 from django.http import HttpRequest, Http404
 from django.template import RequestContext
 from django.db.utils import IntegrityError
+from django.db import transaction
+
 from datetime import datetime
 from app.models import Menu, Submenu
 from .forms import AddMenu
+
 
 def render_app_page(request, template_name, **kwargs):
     kwargs["context_instance"]["this_app_name"] = "RU App Editor prototype"
@@ -122,3 +125,30 @@ def menu(request, menu, child):
             }
         )
     )
+
+def menu_add_root(request):
+    return menu_add(request, menu="1", child="")
+
+def menu_add(request, menu, child):
+    # if this is a POST request we need to process the form data
+    if request.method == 'POST':
+        # create a form instance and populate it with data from the request
+        form = AddMenu(request.POST)
+        if form.is_valid():
+            parentid = form.cleaned_data['parent']
+            name = form.cleaned_data['name']
+
+            parentmenu = Menu.objects.get(id=int(parentid))
+            childcount = len(Submenu.objects.filter(parent=parentmenu)) + 1
+
+            with transaction.atomic():
+                newmenu = Menu(name=name, data='')
+                newmenu.save()
+                submenu = Submenu(parent=parentmenu, ordinal=childcount, child=newmenu)
+                submenu.save()
+
+            return render(request, 'app/menu_added.html')
+    else:
+        form = AddMenu({'parent': (menu or '1'), 'name':'Add word'})
+
+    return render(request, 'app/menu_add.html', {'form': form})
