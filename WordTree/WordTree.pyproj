@@ -6,6 +6,13 @@
     <RootNamespace>WordTree</RootNamespace>
     <InterpreterId>{5de79e01-cde2-443d-b373-c93961924562}</InterpreterId>
     <InterpreterVersion>3.4</InterpreterVersion>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <PythonDebugWebServerCommandEnvironment>
+    </PythonDebugWebServerCommandEnvironment>
+    <WebBrowserPort>
+    </WebBrowserPort>
+    <WebBrowserUrl>
+    </WebBrowserUrl>
   </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -31,6 +38,9 @@
   <ItemGroup>
     <Compile Include="app\forms.py" />
     <Compile Include="app\models.py" />
+    <Compile Include="app\admin.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="app\tests.py" />
     <Compile Include="app\views.py" />
     <Compile Include="app\__init__.py" />

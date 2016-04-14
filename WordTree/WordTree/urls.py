@@ -11,9 +11,9 @@ from app.views import home, contact, about, rootmenu, menu, \
     menu_delete #, menu_delete_root
 
 # Uncomment the next lines to enable the admin:
-# from django.conf.urls import include
-# from django.contrib import admin
-# admin.autodiscover()
+from django.conf.urls import include
+from django.contrib import admin
+admin.autodiscover()
 
 urlpatterns = [
     # Examples:
@@ -24,8 +24,8 @@ urlpatterns = [
     url(r'^menu/(?P<menu>[\d/]*)(?P<child>\d{1,2})/add/$', menu_add, name='menu_add'),
     #url(r'^menu/delete/$', menu_delete_root, name='menu_delete_root'),
     url(r'^menu/(?P<menu>[\d/]*)(?P<child>\d{1,2})/delete/$', menu_delete, name='menu_delete'),
-    url(r'^contact$', contact, name='contact'),
-    url(r'^about', about, name='about'),
+    url(r'^contact/$', contact, name='contact'),
+    url(r'^about/', about, name='about'),
     url(r'^login/$',
         login,
         {
@@ -38,7 +38,7 @@ urlpatterns = [
             }
         },
         name='login'),
-    url(r'^logout$',
+    url(r'^logout/$',
         logout,
         {
             'next_page': '/',
@@ -46,8 +46,8 @@ urlpatterns = [
         name='logout'),
 
     # Uncomment the admin/doc line below to enable admin documentation:
-    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
-    # url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', include(admin.site.urls)),
 ]
