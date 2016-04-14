@@ -1,32 +1,36 @@
 """
 Definition of views.
 """
-
+from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, redirect
 from django.http import HttpRequest, Http404
 from django.template import RequestContext
 from django.db.utils import IntegrityError
 from django.db import transaction
-import logging
 
+import logging
 from datetime import datetime
 from app.models import Menu, Submenu
-from .forms import AddMenu
+from app.forms import AddMenu
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
-def render_app_page(request, template_name, **kwargs):
-    kwargs["context_instance"]["this_app_name"] = "Editor prototype"
-    template_name = "app/" + template_name
-    return render(request, template_name, **kwargs)
+def render_app_page(**kwargs):
+    try:
+        kwargs["context_instance"]["this_app_name"] = "Editor prototype"
+    except KeyError:
+        pass
+    kwargs["template_name"] = "app/" + kwargs["template_name"]
+    return render(**kwargs)
+
 
 def home(request):
-    """Renders the home page."""
+    """ Renders the home page. """
     assert isinstance(request, HttpRequest)
     return render_app_page(
-        request,
-        'index.html',
+        request=request,
+        template_name='index.html',
         context_instance = RequestContext(request,
         {
             'title':'Home Page',
@@ -35,11 +39,11 @@ def home(request):
     )
 
 def contact(request):
-    """Renders the contact page."""
+    """ Renders the contact page. """
     assert isinstance(request, HttpRequest)
     return render_app_page(
-        request,
-        'contact.html',
+        request=request,
+        template_name='contact.html',
         context_instance = RequestContext(request,
         {
             'title':'Contact',
@@ -49,20 +53,26 @@ def contact(request):
     )
 
 def about(request):
-    """Renders the about page."""
+    """ Renders the about page. """
     assert isinstance(request, HttpRequest)
     return render_app_page(
-        request,
-        'about.html',
+        request=request,
+        template_name='about.html',
         context_instance = RequestContext(request,
         {
             'title':'About',
-            'message':'Your application description page.',
+            'message':'R U Menu Editor Prototype.',
             'year':datetime.now().year,
         })
     )
 
+
 class ChildMenu:
+    """
+    Temporary data for gathering child menu items.
+    This is effectively the output from a traversal of the tree
+    which is intended to be stored in an (ordered) list.
+    """
     def __init__(self, id, parent, name, data):
         self.id = id
         self.parent = parent
@@ -71,8 +81,12 @@ class ChildMenu:
 
     def __str__(self):
         return "{{'id':{0}, 'parent':{1}, 'name':{2}, 'data':{3} }}".format(self.id, self.parent, self.name, self.data if self.data else "")
+
 def gather_children(parentid):
-    """ Returns a list of ChildMenu objects matching the children of 'node' """
+    """
+    Returns a list of ChildMenu objects which are
+    the direct first level descendants of Menu 'parentid'.
+    """
     # parentid must be > 0.
     if parentid < 1:
         return []
@@ -92,8 +106,10 @@ def gather_children(parentid):
 def rootmenu(request):
     return redirect("/menu/1", menu="1", child="")
 
+@login_required
+@permission_required(['app.add_menu', 'app.delete_menu', 'app.add_submenu', 'app.delete_submenu'])
 def menu(request, menu, child):
-    """Renders the given menu item and shows links for the children"""
+    """ Renders the given menu with links for the children. """
     assert isinstance(request, HttpRequest)
     #raise Http404("Debugging: " + request.get_raw_uri() + " menu:" + menu + " child:" + child)
     chosenmenu = None
@@ -133,8 +149,8 @@ def menu(request, menu, child):
 
     # Package the results in the appropriate structures
     return render_app_page(
-        request,
-        'menu.html',
+        request=request,
+        template_name='menu.html',
         context_instance = RequestContext(
             request,
             {
@@ -167,7 +183,7 @@ def menu_add(request, menu, child):
                 submenu = Submenu(parent=parentmenu, child=newmenu)
                 submenu.save()
 
-            return render(request, 'app/menu_added.html')
+            return render_app_page(request=request, template_name='menu_added.html')
     else:
         # Retrieve the matching submenu
         menupath = menu.split("/")[0:-1]
@@ -175,7 +191,8 @@ def menu_add(request, menu, child):
         menupath = child or menupath or '1'
         form = AddMenu({'parent': menupath, 'name':'Add word'})
 
-    return render(request, 'app/menu_add.html', {'form': form})
+    return render_app_page(request=request, template_name='menu_add.html',
+                           context={'form':form})
 
 #def menu_delete_root(request):
     ## Can't delete the root menu so this should never happen
@@ -183,7 +200,12 @@ def menu_add(request, menu, child):
 
 
 def gather_descendants(parentid, descendants, depth = -1):
-    """ Post-order traversal of the tree """
+    """
+    Recursive post-order traversal of the tree.
+    Stores the ChildMenu objects collected at each node
+    in reverse order, which is best for performing the
+    deletion operation.
+    """
     # Don't include the parentid in the returned collection.
     # depth: -1 implies all children, 0 is finished.
     if depth == 0:
@@ -194,11 +216,14 @@ def gather_descendants(parentid, descendants, depth = -1):
     children = gather_children(parentid)
     for child in children:
         gather_descendants(child.id, descendants, depth)
-        # The order of operations here make descendants a post order list.
+        # The order of operations here makes descendants a post order list.
         # The sequence will then be suitable for deleting children first.
         descendants.append(child)
 
 def gather_all_descendants(chosenid):
+    """
+    
+    """
     descendants = []
     gather_descendants(chosenid, descendants, -1)
     return descendants
@@ -222,10 +247,10 @@ def menu_delete(request, menu, child):
 
     # and delete all its descendants
     descendants = gather_all_descendants(chosenid)
-    menupath = menu.split("/")[0:-1]
-    menupath = menupath[len(menupath)-1] if menupath else '1'
+    parentid = menu.split("/")[0:-1]
+    parentid = parentid[len(parentid)-1] if parentid else '1'
 
-    todie = ChildMenu(int(chosenmenu.id), int(menupath), chosenmenu.name, chosenmenu.data)
+    todie = ChildMenu(int(chosenmenu.id), int(parentid), chosenmenu.name, chosenmenu.data)
     descendants.append(todie)
 
     with transaction.atomic():
@@ -245,4 +270,5 @@ def menu_delete(request, menu, child):
             # Again there ought to be only one.
             themenu.delete()
 
-    return render(request, 'app/menu_deleted.html')
+    return render_app_page(request=request, template_name='menu_deleted.html')
+
