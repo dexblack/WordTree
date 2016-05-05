@@ -20,5 +20,8 @@ class BootstrapAuthenticationForm(AuthenticationForm):
 class AddMenu(forms.Form):
     parent = forms.CharField(label='Parent menu')
     name = forms.CharField(label='Menu word', max_length=50)
-    #data = forms.CharField(label='Other data', widget=forms.Textarea)
+    #data = forms.CharField(label='Other data', widget=forms.Textarea())
 
+class EditMenu(forms.Form):
+    id = forms.IntegerField(label='Menu id', widget=forms.NumberInput(attrs={'readonly':'readonly'}))
+    name = forms.CharField(label='Menu word', max_length=50)

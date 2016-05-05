@@ -7,9 +7,11 @@
 
 <ol>{% for child in children %}
 <li><a href="{{ child.id }}"> {{ child.name }} [id={{ child.id }}]</a>
-&nbsp;&nbsp;<a href="{{ child.id }}/delete"><img src="{% static 'app/images/Minus.png' %}" width="15px" /></a></li>
+&nbsp;&nbsp;<a href="{{ child.id }}/delete" onclick="return confirm('Are you sure you want to delete {{ child.name }}?')"><img src="{% static 'app/images/Minus.png' %}" width="15px" /></a>
+&nbsp;&nbsp;<a href="{{ child.id }}/edit"><img src="{% static 'app/images/pencil_48.png' %}" width="15px" /></a>
+</li>
 {% endfor %}
 </ol>
-<a href="add"><img src="{% static 'app/images/Add_48.png' %}" width="24px" /></a>
+<a href="add"><img src="{% static 'app/images/add_48.png' %}" width="24px" /></a>
 
 {% endblock %}

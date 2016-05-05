@@ -8,7 +8,8 @@ from django.contrib.auth.views import login, logout
 from app.forms import BootstrapAuthenticationForm
 from app.views import home, contact, about, rootmenu, menu, \
     menu_add_root, menu_add, \
-    menu_delete #, menu_delete_root
+    menu_delete, \
+    menu_edit, menu_edit_root
 
 # Uncomment the next lines to enable the admin:
 from django.conf.urls import include
@@ -19,11 +20,12 @@ urlpatterns = [
     # Examples:
     url(r'^$', home, name='home'),
     url(r'^menu/$', rootmenu),
-    url(r'^menu/(?P<menu>[\d/]*)(?P<child>\d{1,2})/$', menu, name='menu'),
+    url(r'^menu/(?P<menu>(\d+/)*)(?P<child>\d+)/$', menu, name='menu'),
     url(r'^menu/add/$', menu_add_root, name='menu_add_root'),
-    url(r'^menu/(?P<menu>[\d/]*)(?P<child>\d{1,2})/add/$', menu_add, name='menu_add'),
-    #url(r'^menu/delete/$', menu_delete_root, name='menu_delete_root'),
-    url(r'^menu/(?P<menu>[\d/]*)(?P<child>\d{1,2})/delete/$', menu_delete, name='menu_delete'),
+    url(r'^menu/(?P<menu>(\d+/)*)(?P<child>\d+)/add/$', menu_add, name='menu_add'),
+    url(r'^menu/(?P<menu>(\d+/)*)(?P<child>\d+)/delete/$', menu_delete, name='menu_delete'),
+    url(r'^menu/edit/$', menu_edit_root, name='menu_edit_root'),
+    url(r'^menu/(?P<menu>(\d+/)*)(?P<child>\d+)/edit/$', menu_edit, name='menu_edit'),
     url(r'^contact/$', contact, name='contact'),
     url(r'^about/', about, name='about'),
     url(r'^login/$',

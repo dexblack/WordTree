@@ -11,7 +11,7 @@ from django.db import transaction
 import logging
 from datetime import datetime
 from app.models import Menu, Submenu
-from app.forms import AddMenu
+from app.forms import AddMenu, EditMenu
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -102,12 +102,10 @@ def gather_children(parentid):
 
     return children
 
-
 def rootmenu(request):
     return redirect("/menu/1", menu="1", child="")
 
 @login_required
-@permission_required(['app.add_menu', 'app.delete_menu', 'app.add_submenu', 'app.delete_submenu'])
 def menu(request, menu, child):
     """ Renders the given menu with links for the children. """
     assert isinstance(request, HttpRequest)
@@ -163,11 +161,14 @@ def menu(request, menu, child):
     )
 
 def menu_add_root(request):
-    return menu_add(request, menu="1", child="")
+    return menu_add(request, menu=None, child=None)
 
+@login_required
+@permission_required(['app.add_menu', 'app.add_submenu'])
 def menu_add(request, menu, child):
     #raise Http404("Debugging: " + request.get_raw_uri() + " menu:" + menu + " child:" + child)
     # if this is a POST request we need to process the form data
+    logger.info("menu_add('{0}', menu={1}, child={2})".format(request.get_raw_uri(), menu, child))
     if request.method == 'POST':
         # create a form instance and populate it with data from the request
         form = AddMenu(request.POST)
@@ -194,10 +195,39 @@ def menu_add(request, menu, child):
     return render_app_page(request=request, template_name='menu_add.html',
                            context={'form':form})
 
-#def menu_delete_root(request):
-    ## Can't delete the root menu so this should never happen
-    #return rootmenu(request)
+def menu_edit_root(request):
+    return menu_edit(request, menu=None, child=None)
 
+@login_required
+@permission_required(['app.change_menu', 'app.change_submenu'])
+def menu_edit(request, menu, child):
+    logger.info("menu_edit('{0}', menu={1}, child={2})".format(request.get_raw_uri(), menu, child))
+
+    # if this is a POST request we need to process the form data
+    if request.method == 'POST':
+        # create a form instance and populate it with data from the request
+        form = EditMenu(request.POST)
+        if form.is_valid():
+            chosenid = form.cleaned_data['id']
+            chosenmenu = Menu.objects.get(id=int(chosenid))
+            chosenmenu.name = form.cleaned_data['name']
+            chosenmenu.save()
+
+            return render_app_page(request=request, template_name='menu_updated.html')
+    else:
+        try:
+            chosenmenu = Menu.objects.get(id=int(child))
+
+        except ValueError:
+            raise Http404("No menu matching: " + request.get_raw_uri() + "menu: " + menu + " child:" + (child if child else ""))
+
+        except Menu.DoesNotExist:
+            raise Http404("Invalid menu: '" + menu)
+        # Initialise the form with this menu's details
+        form = EditMenu({'id':child, 'name':chosenmenu.name})
+
+    return render_app_page(request=request, template_name='menu_edit.html',
+                           context={'form':form})
 
 def gather_descendants(parentid, descendants, depth = -1):
     """
@@ -221,14 +251,14 @@ def gather_descendants(parentid, descendants, depth = -1):
         descendants.append(child)
 
 def gather_all_descendants(chosenid):
-    """
-    
-    """
+    """ Kick off the recursive descent of the menu tree.  """
     descendants = []
     gather_descendants(chosenid, descendants, -1)
     return descendants
 
 
+@login_required
+@permission_required(['app.delete_menu', 'app.delete_submenu'])
 def menu_delete(request, menu, child):
     """ Removes the given menu and all its children """
     #raise Http404("Debugging: " + request.get_raw_uri() + " menu:" + menu + " child:" + child)
@@ -247,7 +277,7 @@ def menu_delete(request, menu, child):
 
     # and delete all its descendants
     descendants = gather_all_descendants(chosenid)
-    parentid = menu.split("/")[0:-1]
+    parentid = menu.split("/")[0:-1] if menu else None
     parentid = parentid[len(parentid)-1] if parentid else '1'
 
     todie = ChildMenu(int(chosenmenu.id), int(parentid), chosenmenu.name, chosenmenu.data)
@@ -271,4 +301,3 @@ def menu_delete(request, menu, child):
             themenu.delete()
 
     return render_app_page(request=request, template_name='menu_deleted.html')
-
