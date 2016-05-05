@@ -1,0 +1,14 @@
+{% extends "app/layout.html" %}
+{% load staticfiles %}
+
+{% block content %}
+<br/><br/>
+<a href="/" onClick="window.history.back();return false;" ><img src="{% static 'app/images/Back.png' %}" width="24px" /></a>
+<br/><br/>
+<form action="/menu/edit/" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Save" />
+</form>
+
+{% endblock %}
