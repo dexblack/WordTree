@@ -1,7 +1,9 @@
 {% extends "app/layout.html" %}
+{% load staticfiles %}
 
 {% block content %}
 
 <h2>Menu deleted.</h2>
-<h3><a href="/menu/1" >View menu</a></h3>
+<a href="/menu/1"><img src="{% static 'app/images/UpLeft.png' %}" width="24px" /></a>
+
 {% endblock %}
