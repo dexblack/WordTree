@@ -211,8 +211,12 @@ GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
 
-# Python
+# Python environments
 env/
+env1/
 
 # SQLite
 *.sqlite3
+
+#Django static files
+WordTree/static/
