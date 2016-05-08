@@ -69,9 +69,6 @@
     <Content Include="app\static\app\images\Minus.png" />
     <Content Include="app\static\app\images\pencil_48.png" />
     <Content Include="app\static\app\images\UpLeft.png" />
-    <Content Include="app\templates\app\menu_updated.html" />
-    <Content Include="app\templates\app\menu_deleted.html" />
-    <Content Include="app\templates\app\menu_added.html" />
     <Content Include="app\templates\app\menu_add.html" />
     <Content Include="app\templates\app\menu.html" />
     <Content Include="app\templates\app\menu_edit.html" />

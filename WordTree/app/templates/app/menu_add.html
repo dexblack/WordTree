@@ -5,7 +5,7 @@
 <br/><br/>
 <a href="/" onClick="window.history.back();return false;" ><img src="{% static 'app/images/Back.png' %}" width="24px" /></a>
 <br/><br/>
-<form action="/menu/add/" method="post">
+<form action="/menu/{{ form.next.value }}/add/" method="post">
     {% csrf_token %}
     {{ form.as_p }}
     <input type="submit" value="Add" />

@@ -103,7 +103,7 @@ def gather_children(parentid):
     return children
 
 def rootmenu(request):
-    return redirect("/menu/1", menu="1", child="")
+    return redirect("/menu/1")
 
 @login_required
 def menu(request, menu, child):
@@ -184,13 +184,13 @@ def menu_add(request, menu, child):
                 submenu = Submenu(parent=parentmenu, child=newmenu)
                 submenu.save()
 
-            return render_app_page(request=request, template_name='menu_added.html')
+            return redirect('/menu/{0}'.format(form.cleaned_data['next']))
     else:
         # Retrieve the matching submenu
         menupath = menu.split("/")[0:-1]
         menupath = menupath[len(menupath)-1] if menupath else None 
         menupath = child or menupath or '1'
-        form = AddMenu({'parent': menupath, 'name':'Add word'})
+        form = AddMenu({'parent': menupath, 'name':'Add word', 'next': menu + child})
         form.fields['name'].widget.attrs['autofocus'] = 'autofocus'
 
     return render_app_page(request=request, template_name='menu_add.html',
@@ -214,7 +214,7 @@ def menu_edit(request, menu, child):
             chosenmenu.name = form.cleaned_data['name']
             chosenmenu.save()
 
-            return render_app_page(request=request, template_name='menu_updated.html')
+            return redirect('/menu/{0}'.format(form.cleaned_data['next']))
     else:
         try:
             chosenmenu = Menu.objects.get(id=int(child))
@@ -225,7 +225,7 @@ def menu_edit(request, menu, child):
         except Menu.DoesNotExist:
             raise Http404("Invalid menu: '" + menu)
         # Initialise the form with this menu's details
-        form = EditMenu({'id':child, 'name':chosenmenu.name})
+        form = EditMenu({'id':child, 'name':chosenmenu.name, 'next': menu})
         form.fields['name'].widget.attrs['autofocus'] = 'autofocus'
 
     return render_app_page(request=request, template_name='menu_edit.html',
@@ -302,4 +302,4 @@ def menu_delete(request, menu, child):
             # Again there ought to be only one.
             themenu.delete()
 
-    return render_app_page(request=request, template_name='menu_deleted.html')
+    return redirect('/menu/{0}'.format(menu))
