@@ -73,6 +73,8 @@
     <Content Include="app\templates\app\menu.html" />
     <Content Include="app\templates\app\menu_edit.html" />
     <None Include="dxlx01 FTP.pubxml" />
+    <Content Include="app\templates\app\menu_item.html" />
+    <Content Include="app\templates\app\menu_report.html" />
     <Content Include="requirements.txt" />
     <None Include="db.sqlite3" />
     <Content Include="app\static\app\content\bootstrap.css" />
