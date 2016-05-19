@@ -1,13 +1,8 @@
 {# filename: menu_item.html #}
 <ul class="list-nobullet">
 <li><h4>{{ branch.id }} {{ branch.name }}</h4>
-{% if branch.branches %}
-    {% for branch in branch.branches %}
-        {% with "app/menu_item.html" as filename %}
-        {% with branch as branches %}
-            {% include filename %}
-        {% endwith %}
-        {% endwith %}
-    {% endfor %}
-{% endif %}
-</li></ul>
+{% for branch in branch.branches %}
+    {% with "app/menu_item.html" as filename %}
+        {% include filename %}
+    {% endwith %}
+{% endfor %}</li></ul>
