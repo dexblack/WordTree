@@ -169,7 +169,7 @@ def menu(request, menu, child):
             request=request,
             dict_={
                 'title' : chosenmenu.name,
-                'parent' : '/menu/' + '/'.join(menupath),
+                'parent' : '/menu/' + '/'.join(menupath) + '/',
                 'children' : children,
             })
         )
@@ -198,7 +198,7 @@ def menu_add(request, menu, child):
                 submenu = Submenu(parent=parentmenu, child=newmenu)
                 submenu.save()
 
-            return redirect('/menu/{0}'.format(form.cleaned_data['next']))
+            return redirect('/menu/{0}/'.format(form.cleaned_data['next']))
     else:
         # Retrieve the matching submenu
         menupath = menu.split("/")[0:-1]
@@ -227,7 +227,7 @@ def menu_edit(request, menu, child):
             chosenmenu.name = form.cleaned_data['name']
             chosenmenu.save()
 
-            return redirect('/menu/{0}'.format(form.cleaned_data['next']))
+            return redirect('/menu/{0}/'.format(form.cleaned_data['next']))
     else:
         try:
             chosenmenu = Menu.objects.get(id=int(child))
@@ -328,7 +328,7 @@ def menu_delete(request, menu, child):
             # Again there ought to be only one.
             themenu.delete()
 
-    return redirect('/menu/{0}'.format(menu))
+    return redirect('/menu/{0}/'.format(menu))
 
 
 class Tree(MenuItem):

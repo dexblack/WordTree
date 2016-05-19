@@ -4,8 +4,8 @@
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <Name>WordTree</Name>
     <RootNamespace>WordTree</RootNamespace>
-    <InterpreterId>{d2189073-2cfa-4863-bc40-1f92410d0de8}</InterpreterId>
-    <InterpreterVersion>2.7</InterpreterVersion>
+    <InterpreterId>{5de79e01-cde2-443d-b373-c93961924562}</InterpreterId>
+    <InterpreterVersion>3.4</InterpreterVersion>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <PythonDebugWebServerCommandEnvironment>
     </PythonDebugWebServerCommandEnvironment>
@@ -13,7 +13,9 @@
     </WebBrowserPort>
     <WebBrowserUrl>
     </WebBrowserUrl>
-    <NameOfLastUsedPublishProfile>dxlx01 FTP</NameOfLastUsedPublishProfile>
+    <NameOfLastUsedPublishProfile>websites local</NameOfLastUsedPublishProfile>
+    <PublishUrl>Z:\my\websites\tru.dexblack.net</PublishUrl>
+    <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -72,6 +74,7 @@
     <Content Include="app\templates\app\menu_add.html" />
     <Content Include="app\templates\app\menu.html" />
     <Content Include="app\templates\app\menu_edit.html" />
+    <None Include="websites local.pubxml" />
     <None Include="dxlx01 FTP.pubxml" />
     <Content Include="app\templates\app\menu_item.html" />
     <Content Include="app\templates\app\menu_report.html" />
