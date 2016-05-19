@@ -18,12 +18,12 @@ class BootstrapAuthenticationForm(AuthenticationForm):
                                    'placeholder':'Password'}))
 
 class AddMenu(forms.Form):
-    parent = forms.CharField(label='Parent menu')
-    name = forms.CharField(label='Menu word', max_length=50)
+    parent = forms.CharField(label='Parent')
+    name = forms.CharField(label='Menu', help_text='Enter the menu name', max_length=50, widget=forms.TextInput(attrs={'autofocus':'autofocus'}))
     next = forms.CharField(widget=forms.HiddenInput())
     #data = forms.CharField(label='Other data', widget=forms.Textarea())
 
 class EditMenu(forms.Form):
-    id = forms.IntegerField(label='Menu id', widget=forms.NumberInput(attrs={'readonly':'readonly'}))
-    name = forms.CharField(label='Menu word', max_length=50)
+    id = forms.IntegerField(label='Id', widget=forms.NumberInput(attrs={'readonly':'readonly'}))
+    name = forms.CharField(label='Menu', help_text='Enter the menu name', max_length=50, widget=forms.TextInput(attrs={'autofocus':'autofocus'}))
     next = forms.CharField(widget=forms.HiddenInput())

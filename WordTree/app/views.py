@@ -204,8 +204,7 @@ def menu_add(request, menu, child):
         menupath = menu.split("/")[0:-1]
         menupath = menupath[len(menupath)-1] if menupath else None 
         menupath = child or menupath or '1'
-        form = AddMenu({'parent': menupath, 'name':'Add word', 'next': menu + child})
-        form.fields['name'].widget.attrs['autofocus'] = 'autofocus'
+        form = AddMenu({'parent': menupath, 'next': menu + child})
 
     return render_app_page(request=request, template_name='menu_add.html',
                            context={'form':form})
@@ -240,7 +239,6 @@ def menu_edit(request, menu, child):
             raise Http404("Invalid menu: '" + menu)
         # Initialise the form with this menu's details
         form = EditMenu({'id':child, 'name':chosenmenu.name, 'next': menu})
-        form.fields['name'].widget.attrs['autofocus'] = 'autofocus'
 
     return render_app_page(request=request, template_name='menu_edit.html',
                            context={'form':form})
