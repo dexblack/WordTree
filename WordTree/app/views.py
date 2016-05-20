@@ -90,8 +90,8 @@ class ChildMenu(MenuItem):
     This is effectively the output from a traversal of the tree
     which is intended to be stored in an (ordered) list.
     """
-    def __init__(self, parent, id, name, data):
-        self.parent = parent
+    def __init__(self, parentid, id, name, data):
+        self.parentid = parentid
         super(ChildMenu, self).__init__(id=id, name=name, data=data)
 
     def __str__(self):
@@ -113,7 +113,7 @@ def gather_children(parentid):
     submenus = Submenu.objects.filter(parent=parentid).order_by('child_id')
     for submenu in submenus:
         menu = Menu.objects.get(id=submenu.child.id)
-        childmenu = ChildMenu(parent=int(parentmenu.id), id=int(menu.id), name=menu.name, data=menu.data)
+        childmenu = ChildMenu(parentid=int(parentmenu.id), id=int(menu.id), name=menu.name, data=menu.data)
         children.append(childmenu)
 
     return children
@@ -314,7 +314,7 @@ def menu_delete(request, menu, child):
     with transaction.atomic():
         for descendant in descendants:
             # First find the parent Menu
-            parentmenu = Menu.objects.get(id=descendant.parent)
+            parentmenu = Menu.objects.get(id=descendant.parentid)
             # Select the matching Submenu record.
             submenus = Submenu.objects.filter(parent=parentmenu, child_id=descendant.id)
             # There should only be one.
@@ -328,7 +328,7 @@ def menu_delete(request, menu, child):
             # Again there ought to be only one.
             themenu.delete()
 
-    return redirect('/menu/{0}/'.format(menu))
+    return redirect('/menu/{0}'.format(menu))
 
 
 class Tree(MenuItem):

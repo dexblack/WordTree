@@ -68,9 +68,9 @@ class MenuOperationTests(TestCase):
     24|8|delete_submenu|Can delete submenu
     """
     def setUp(self):
-        # Every test needs access to the request factory.
+        # Every test needs specific user access permissions.
         self.user = User.objects.create_user('dex2', 'dex@gmail.com', 'dex2')
-        self.user.user_permissions.add(19,20,21,22,23,24)
+        self.user.user_permissions.add(19,20,21,22,23,24) # See list above in doc string.
 
     def test_menu_add(self):
         self.assertTrue(self.client.login(username='dex2', password='dex2'))
@@ -79,30 +79,32 @@ class MenuOperationTests(TestCase):
         # Test menu_add() as if it were deployed at /menu/1/add/
         response = self.client.get('/menu/1/')
         self.assertContains(response, 'Menu', 2, 200)
-
+        # Add a new top level menu item.
         response_get = self.client.get('/menu/1/add/', {'parent': '1', 'next': '1'})
         response_post_add = self.client.post('/menu/1/add/', {'parent': '1', 'name': 'Add1', 'next': '1'})
-
+        # Check we're redirected back to the parent menu.
         self.assertEqual(response_post_add.status_code, 302)
         self.assertEqual(response_post_add.url, '/menu/1/')
+        # Check the new menu item exists.
+        response_get2 = self.client.get('/menu/1/3/')
+        self.assertEqual(response_get2.status_code, 200)
+
+    def test_menu_delete(self):
+        self.test_menu_add()
+        # Delete new menu item.
+        response_del = self.client.get('/menu/1/3/delete/')
+        self.assertEqual(response_del.status_code, 302)
+        self.assertEqual(response_del.url, '/menu/1/')
+        # Check that it is really gone.
+        response_get2 = self.client.get('/menu/1/3/')
+        self.assertEqual(response_get2.status_code, 404)
 
     def test_menu_edit(self):
-        self.assertTrue(self.client.login(username='dex2', password='dex2'))
-        self.assertIn('_auth_user_id', self.client.session)
-
-        # Test menu_add() as if it were deployed at /menu/1/add/
-        response = self.client.get('/menu/1/')
-        self.assertContains(response, 'Menu', 2, 200)
-
-        response_get = self.client.get('/menu/1/add/', {'parent': '1', 'next': '1'})
-        response_post_add = self.client.post('/menu/1/add/', {'parent': '1', 'name': 'Add1', 'next': '1'})
-
-        self.assertEqual(response_post_add.status_code, 302)
-        self.assertEqual(response_post_add.url, '/menu/1/')
-
-        response_post_edit = self.client.post('/menu/1/2/edit/', {'id': '2', 'name': 'Edit1', 'next': '1'})
+        self.test_menu_add()
+        # Modify the new item's text.
+        response_post_edit = self.client.post('/menu/1/3/edit/', {'id': '3', 'name': 'Edit1', 'next': '1'})
         self.assertEqual(response_post_edit.status_code, 302)
         self.assertEqual(response_post_edit.url, '/menu/1/')
-
-        response_get2 = self.client.get('/menu/1/2/')
-        self.assertContains(response_get2, 'Edit1', 2)
+        # Check the update worked.
+        response_get2 = self.client.get('/menu/1/3/')
+        self.assertContains(response_get2, 'Edit1', 2, 200)
