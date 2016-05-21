@@ -130,8 +130,9 @@ def menu(request, menu, child):
     menupath = []
     try:
         # Retrieve the matching submenu
-        menupath = menu.split("/")[0:-1]
-
+        menupath = menu.split("/") if menu else []
+        depth = len(menupath)
+        menupath = menupath[0:-1] if menu else []
         # This is a consequence of the regex matching algorithm
         # used when parsing the application urls collection.
         chosenid = int(child if child else menu)
@@ -171,6 +172,7 @@ def menu(request, menu, child):
                 'title' : chosenmenu.name,
                 'parent' : '/menu/' + '/'.join(menupath) + '/',
                 'children' : children,
+                'depth' : depth,
             })
         )
 
