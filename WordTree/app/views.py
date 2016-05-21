@@ -149,10 +149,6 @@ def menu(request, menu, child):
             try:
                 rootmenu = Menu(name='RU App', data='')
                 rootmenu.save()
-                firstmenu = Menu(name='First Menu', data='')
-                firstmenu.save()
-                submenu = Submenu(parent=rootmenu, child=firstmenu)
-                submenu.save()
                 chosenmenu = rootmenu
 
             except IntegrityError:
