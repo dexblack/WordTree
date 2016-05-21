@@ -74,6 +74,8 @@
     <Content Include="app\templates\app\menu_add.html" />
     <Content Include="app\templates\app\menu.html" />
     <Content Include="app\templates\app\menu_edit.html" />
+    <None Include="web.config" />
+    <None Include="web.debug.config" />
     <None Include="websites local.pubxml" />
     <None Include="dxlx01 FTP.pubxml" />
     <Content Include="app\templates\app\menu_item.html" />
