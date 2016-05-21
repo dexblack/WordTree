@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 def render_app_page(**kwargs):
     try:
         kwargs["context_instance"]["this_app_name"] = "Editor prototype"
+        kwargs["context_instance"]["this_app_ver"] = "0.9.2"
     except KeyError:
         pass
     kwargs["template_name"] = "app/" + kwargs["template_name"]
