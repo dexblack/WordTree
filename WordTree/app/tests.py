@@ -109,6 +109,9 @@ class MenuOperationTests(TestCase):
 
     def test_menu_edit(self):
         self.test_menu_add()
+        # Retrieve the edit form.
+        response_get_edit = self.client.get('/menu/1/2/edit/')
+        self.assertContains(response_get_edit,'Enter the menu name', 1, 200)
         # Modify the new item's text.
         response_post_edit = self.client.post('/menu/1/2/edit/', {'id': '2', 'name': 'Edit1', 'next': '1'})
         self.assertEqual(response_post_edit.status_code, 302)

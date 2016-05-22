@@ -2,8 +2,8 @@
 
 {% block content %}
 {# filename: menu_all.html #}
-<h3>Total number of menu items: {{ total }}</h3>
-{%for branch in tree.branches %}
+<h3>Total number of menu items: {{ report.total }}</h3>
+{%for branch in report.tree.branches %}
     {%include "app/menu_item.html" %}
 {%endfor%}
 

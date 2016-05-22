@@ -16,10 +16,13 @@ from app.forms import AddMenu, EditMenu
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
+THIS_APP_NAME = 'Editor Prototype'
+THIS_APP_VERSION = [0,9,3]
+
 def render_app_page(**kwargs):
     try:
-        kwargs["context_instance"]["this_app_name"] = "Editor prototype"
-        kwargs["context_instance"]["this_app_ver"] = "0.9.2"
+        kwargs["context_instance"]["this_app_name"] = THIS_APP_NAME
+        kwargs["context_instance"]["this_app_ver"] = '.'.join([str(x) for x in THIS_APP_VERSION])
     except KeyError:
         pass
     kwargs["template_name"] = "app/" + kwargs["template_name"]
@@ -120,28 +123,25 @@ def gather_children(parentid):
     return children
 
 def rootmenu(request):
-    return redirect("/menu/1")
+    return redirect("/menu/1/")
 
 @login_required
-def menu(request, menu, child):
+def menu(request, menu):
     """ Renders the given menu with links for the children. """
     assert isinstance(request, HttpRequest)
-    #raise Http404("Debugging: " + request.get_raw_uri() + " menu:" + menu + " child:" + child)
+    logger.info("menu('{0}', menu={1})".format(request.get_raw_uri(), menu))
     chosenmenu = None
-    menupath = []
     try:
-        # Retrieve the matching submenu
-        menupath = menu.split("/") if menu else []
+        # Retrieve the last menu id in the URL fragment.
+        menupath = menu.split("/")[0:-1] if menu else ['1']
         depth = len(menupath)
-        menupath = menupath[0:-1] if menu else []
-        # This is a consequence of the regex matching algorithm
-        # used when parsing the application urls collection.
-        chosenid = int(child if child else menu)
-
+        menuid = menupath[-1]
+        chosenid = int(menuid)
+        # Retrieve the corresponding Menu object.
         chosenmenu = Menu.objects.get(id=chosenid)
 
     except ValueError:
-        raise Http404("No menu found at: " + request.get_raw_uri() + "menu: " + menu + " child:" + (child if child else ""))
+        raise Http404("No menu found at: " + request.get_raw_uri() + "menu: " + menu)
 
     except Menu.DoesNotExist:
         if chosenid == 1:
@@ -167,21 +167,21 @@ def menu(request, menu, child):
             request=request,
             dict_={
                 'title' : chosenmenu.name,
-                'parent' : '/menu/' + '/'.join(menupath) + '/',
+                'parent' : '/'.join(menupath[0:-1]),
                 'children' : children,
                 'depth' : depth,
             })
         )
 
-def menu_add_root(request):
-    return menu_add(request, menu=None, child=None)
+#def menu_add_root(request):
+#    return menu_add(request, menu=None, child=None)
 
 @login_required
 @permission_required(['app.add_menu', 'app.add_submenu'])
-def menu_add(request, menu, child):
+def menu_add(request, menu):
     #raise Http404("Debugging: " + request.get_raw_uri() + " menu:" + menu + " child:" + child)
     # if this is a POST request we need to process the form data
-    logger.info("menu_add('{0}', menu={1}, child={2})".format(request.get_raw_uri(), menu, child))
+    logger.info("menu_add('{0}', menu={1})".format(request.get_raw_uri(), menu))
     if request.method == 'POST':
         # create a form instance and populate it with data from the request
         form = AddMenu(request.POST)
@@ -199,22 +199,27 @@ def menu_add(request, menu, child):
 
             return redirect('/menu/{0}/'.format(form.cleaned_data['next']))
     else:
-        # Retrieve the matching submenu
-        menupath = menu.split("/")[0:-1]
-        menupath = menupath[len(menupath)-1] if menupath else None 
-        menupath = child or menupath or '1'
-        form = AddMenu({'parent': menupath, 'next': menu + child})
+        # Retrieve the matching parent menu id being added to.
+        menupath = menu.split("/")[0:-1] if menu else ['1']
 
-    return render_app_page(request=request, template_name='menu_add.html',
-                           context={'form':form})
+        form = AddMenu({
+            'parent': menupath[-1],
+            'next': '/'.join(menupath)
+        })
 
-def menu_edit_root(request):
-    return menu_edit(request, menu=None, child=None)
+    return render_app_page(
+        request=request,
+        template_name='menu_add.html',
+        context={'form':form}
+        )
+
+#def menu_edit_root(request):
+#    return menu_edit(request, menu=None, child=None)
 
 @login_required
 @permission_required(['app.change_menu', 'app.change_submenu'])
-def menu_edit(request, menu, child):
-    logger.info("menu_edit('{0}', menu={1}, child={2})".format(request.get_raw_uri(), menu, child))
+def menu_edit(request, menu):
+    logger.info("menu_edit('{0}', menu={1})".format(request.get_raw_uri(), menu))
 
     # if this is a POST request we need to process the form data
     if request.method == 'POST':
@@ -229,18 +234,33 @@ def menu_edit(request, menu, child):
             return redirect('/menu/{0}/'.format(form.cleaned_data['next']))
     else:
         try:
-            chosenmenu = Menu.objects.get(id=int(child))
+            # Retrieve the matching menu id being edited.
+            menupath = menu.split("/")[0:-1]
+            menuid = int(menupath[-1])
+            if menuid == 1:
+                # Do nothing. Do not edit the root node.
+                return redirect('/menu/1/')
+
+            chosenmenu = Menu.objects.get(id=menuid)
 
         except ValueError:
-            raise Http404("No menu matching: " + request.get_raw_uri() + "menu: " + menu + " child:" + (child if child else ""))
+            raise Http404("No menu matching: " + request.get_raw_uri() + "menu: " + menu)
 
         except Menu.DoesNotExist:
             raise Http404("Invalid menu: '" + menu)
-        # Initialise the form with this menu's details
-        form = EditMenu({'id':child, 'name':chosenmenu.name, 'next': menu})
 
-    return render_app_page(request=request, template_name='menu_edit.html',
-                           context={'form':form})
+        # Initialise the form with this menu's details
+        form = EditMenu({
+            'id':menupath[-1],
+            'name':chosenmenu.name,
+            'next': '/'.join(menupath[0:-1])
+        })
+
+    return render_app_page(
+        request=request,
+        template_name='menu_edit.html',
+        context={'form':form}
+        )
 
 def gather_descendants(descendants, parentid, postorder=True, depth = -1):
     """
@@ -286,29 +306,33 @@ def gather_all_descendants(chosenid, postorder):
 
 @login_required
 @permission_required(['app.delete_menu', 'app.delete_submenu'])
-def menu_delete(request, menu, child):
+def menu_delete(request, menu):
     """ Removes the given menu and all its children """
-    #raise Http404("Debugging: " + request.get_raw_uri() + " menu:" + menu + " child:" + child)
     assert isinstance(request, HttpRequest)
-    logger.info("menu_delete('{0}', menu={1}, child={2})".format(request.get_raw_uri(), menu, child))
-    chosenmenu = None
+    logger.info("menu_delete('{0}', menu={1})".format(request.get_raw_uri(), menu))
     try:
-        chosenid = int(child if child else menu)
-        chosenmenu = Menu.objects.get(id=chosenid)
+        # Retrieve the last menu id in the URL fragment.
+        menupath = menu.split("/")[0:-1] if menu else ['1']
+        menuid = int(menupath[-1])
+        if menuid == 1:
+            # Do nothing. Do not delete the root node.
+            return redirect('/menu/1/')
+        # Only descendants of the root node can be deleted.
+        assert(len(menupath) > 1)
+        parentid = int(menupath[-2])
+        # Retrieve the corresponding Menu object.
+        # This also ensures we're deleting an existing item.
+        chosenmenu = Menu.objects.get(id=menuid)
 
     except ValueError:
-        raise Http404("No menu matching: " + request.get_raw_uri() + "menu: " + menu + " child:" + (child if child else ""))
+        raise Http404("No menu matching: " + request.get_raw_uri() + "menu: " + menu)
 
     except Menu.DoesNotExist:
         raise Http404("Invalid menu: '" + menu)
 
     # and delete all its descendants
-    descendants = gather_all_descendants(chosenid=chosenid, postorder=True)
-    parentid = menu.split("/")[0:-1] if menu else None
-    parentid = parentid[len(parentid)-1] if parentid else '1'
-
-    todie = ChildMenu(parentid=int(parentid), id=int(chosenmenu.id), name=chosenmenu.name, data=chosenmenu.data)
-    descendants.append(todie)
+    descendants = gather_all_descendants(chosenid=menuid, postorder=True)
+    descendants.append(ChildMenu(parentid=parentid, id=menuid, name=chosenmenu.name, data=chosenmenu.data))
 
     with transaction.atomic():
         for descendant in descendants:
@@ -327,7 +351,7 @@ def menu_delete(request, menu, child):
             # Again there ought to be only one.
             themenu.delete()
 
-    return redirect('/menu/{0}'.format(menu))
+    return redirect('/menu/{0}/'.format('/'.join(menupath[0:-1])))
 
 
 class Tree(MenuItem):
@@ -396,7 +420,6 @@ def menu_report(request):
             request=request,
             dict_={
                 'title': 'Menu Report',
-                'total': report['count'],
-                'tree': report['tree'],
+                'report': report,
             })
         )
