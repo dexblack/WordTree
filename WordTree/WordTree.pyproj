@@ -67,10 +67,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="app\static\app\images\add_48.png" />
-    <Content Include="app\static\app\images\Back.png" />
-    <Content Include="app\static\app\images\Minus.png" />
+    <Content Include="app\static\app\images\arrow_left_48.png" />
+    <Content Include="app\static\app\images\arrow_up_48.png" />
+    <Content Include="app\static\app\images\cross_48.png" />
     <Content Include="app\static\app\images\pencil_48.png" />
-    <Content Include="app\static\app\images\UpLeft.png" />
     <Content Include="app\templates\app\menu_add.html" />
     <Content Include="app\templates\app\menu.html" />
     <Content Include="app\templates\app\menu_edit.html" />
