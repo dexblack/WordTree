@@ -70,10 +70,15 @@
     <Content Include="app\static\app\images\arrow_left_48.png" />
     <Content Include="app\static\app\images\arrow_up_48.png" />
     <Content Include="app\static\app\images\cross_48.png" />
+    <Content Include="app\static\app\images\favicon.ico" />
     <Content Include="app\static\app\images\pencil_48.png" />
+    <Content Include="app\static\app\images\shop-store-frontal-building.png" />
     <Content Include="app\templates\app\menu_add.html" />
     <Content Include="app\templates\app\menu.html" />
     <Content Include="app\templates\app\menu_edit.html" />
+    <Content Include="run.cmd">
+      <Publish>True</Publish>
+    </Content>
     <None Include="web.config" />
     <None Include="web.debug.config" />
     <None Include="websites local.pubxml" />
