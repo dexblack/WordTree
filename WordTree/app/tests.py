@@ -95,7 +95,7 @@ class MenuOperationTests(TestCase):
         self.assertEqual(response_post_add.url, '/menu/1/')
         # Check the new menu item exists.
         response_get2 = self.client.get('/menu/1/2/')
-        self.assertEqual(response_get2.status_code, 200)
+        self.assertContains(response_get2, 'Add1', 2, 200)
 
     def test_menu_delete(self):
         self.test_menu_add()
