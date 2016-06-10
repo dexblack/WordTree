@@ -7,11 +7,19 @@ import django
 django.setup()
 
 from django.test import TestCase
+from django.utils.http import urlquote
 from django.contrib.auth.models import User
+
 from app.views import menu_add, menu_edit
+
+from xml.sax.saxutils import escape
 import json
 
 THE_APP_NAME = 'RU App'
+
+def custom_escape(s):
+    entities = { "'":'&#39;' }
+    return escape(s, entities)
 
 class ViewTests(TestCase):
     """Tests for the simple application views."""
@@ -96,7 +104,8 @@ class MenuOperationTests(TestCase):
         self.assertEqual(response_post_add.url, '/menu/1/')
         # Check the new menu item exists.
         response_get2 = self.client.get('/menu/1/2/')
-        self.assertContains(response_get2, name, 2, 200)
+        escaped_name = custom_escape(name)
+        self.assertContains(response_get2, escaped_name, 2, 200)
 
     def api_menu_add_item(self, parent, name):
         self.assertTrue(self.client.login(username='dex2', password='dex2'))
@@ -108,19 +117,28 @@ class MenuOperationTests(TestCase):
         response = self.client.get('/menu/{0}/'.format(parent))
         self.assertContains(response, THE_APP_NAME, 2, 200)
         # Add a new top level menu item.
-        response_post_add = self.client.post('/menu/{0}/api_add/?name={1}'.format(parent, name))
+        response_post_add = self.client.post('/menu/{0}/api_add/?name={1}'.format(parent, urlquote(name)))
         response_json = json.loads(response_post_add.content.decode('utf-8'))
         # Check that the JSON response text contains the expected two field names and the new name.
         self.assertEqual(response_json['name'], name)
         # Check the new menu item now exists at the correct URL.
         response_get2 = self.client.get('/menu/{0}/{1}/'.format(parent, response_json['id']))
-        self.assertContains(response_get2, name, 2, 200)
+        escaped_name = custom_escape(name)
+        self.assertContains(response_get2, escaped_name, 2, 200)
+        # This return value allows for writing adaptive tests.
+        return response_json['id']
 
     def test_menu_add(self):
         self.menu_add_item('1', 'Add1')
 
     def test_api_menu_add(self):
-        self.api_menu_add_item('1', 'Add 2')
+        names = ["Add &<>:' -2", 'Add 1']
+        for name in names:
+            id = self.api_menu_add_item('1', name)
+            # Check the new menu item now exists at the correct URL.
+            response_get = self.client.get('/menu/1/{0}/'.format(id))
+            escaped_name = custom_escape(name)
+            self.assertContains(response_get, escaped_name, 2, 200)
 
     def test_menu_delete(self):
         self.test_menu_add()
