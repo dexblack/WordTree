@@ -9,6 +9,7 @@ django.setup()
 from django.test import TestCase
 from django.contrib.auth.models import User
 from app.views import menu_add, menu_edit
+import json
 
 THE_APP_NAME = 'RU App'
 
@@ -74,7 +75,7 @@ class MenuOperationTests(TestCase):
         self.user = User.objects.create_user('dex2', 'dex@gmail.com', 'dex2')
         self.user.user_permissions.add(19,20,21,22,23,24) # See list above in doc string.
 
-    def test_menu_add(self):
+    def menu_add_item(self, parent, name):
         self.assertTrue(self.client.login(username='dex2', password='dex2'))
         self.assertIn('_auth_user_id', self.client.session)
 
@@ -89,13 +90,37 @@ class MenuOperationTests(TestCase):
         self.assertContains(response_get, 'Enter the menu name', 1, 200)
         self.assertContains(response_get, 'Add', 1, 200)
         self.assertContains(response_get, 'menu', 2, 200)
-        response_post_add = self.client.post('/menu/1/add/', {'parent': '1', 'name': 'Add1', 'next': '1'})
+        response_post_add = self.client.post('/menu/1/add/', {'parent': parent, 'name': name, 'next': '1'})
         # Check we're redirected back to the parent menu.
         self.assertEqual(response_post_add.status_code, 302)
         self.assertEqual(response_post_add.url, '/menu/1/')
         # Check the new menu item exists.
         response_get2 = self.client.get('/menu/1/2/')
-        self.assertContains(response_get2, 'Add1', 2, 200)
+        self.assertContains(response_get2, name, 2, 200)
+
+    def api_menu_add_item(self, parent, name):
+        self.assertTrue(self.client.login(username='dex2', password='dex2'))
+        self.assertIn('_auth_user_id', self.client.session)
+
+        # Test menu_add() as if it were deployed at /menu/1/add/
+        # This initial get operation is necessary
+        # to force the creation of the root menu.
+        response = self.client.get('/menu/{0}/'.format(parent))
+        self.assertContains(response, THE_APP_NAME, 2, 200)
+        # Add a new top level menu item.
+        response_post_add = self.client.post('/menu/{0}/api_add/?name={1}'.format(parent, name))
+        response_json = json.loads(response_post_add.content.decode('utf-8'))
+        # Check that the JSON response text contains the expected two field names and the new name.
+        self.assertEqual(response_json['name'], name)
+        # Check the new menu item now exists at the correct URL.
+        response_get2 = self.client.get('/menu/{0}/{1}/'.format(parent, response_json['id']))
+        self.assertContains(response_get2, name, 2, 200)
+
+    def test_menu_add(self):
+        self.menu_add_item('1', 'Add1')
+
+    def test_api_menu_add(self):
+        self.api_menu_add_item('1', 'Add 2')
 
     def test_menu_delete(self):
         self.test_menu_add()
@@ -119,3 +144,25 @@ class MenuOperationTests(TestCase):
         # Check the update worked.
         response_get2 = self.client.get('/menu/1/2/')
         self.assertContains(response_get2, 'Edit1', 2, 200)
+
+    def test_menu_move_next(self):
+        pass
+        self.menu_add_item('1', 'Add1')
+        self.menu_add_item('1', 'Add2')
+        # Retrieve the edit form.
+        response_post_edit = self.client.post('/menu/1/2/move_next/')
+        self.assertEqual(response_post_edit.status_code, 302)
+        self.assertEqual(response_post_edit.url, '/menu/1/')
+        # Check the update worked.
+        response_get2 = self.client.get('/menu/1/2/')
+        self.assertContains(response_get2, 'Edit1', 2, 200)
+
+    def test_menu_move_prev(self):
+        #
+        pass
+
+    def test_menu_change_parent(self):
+        #
+        pass
+
+

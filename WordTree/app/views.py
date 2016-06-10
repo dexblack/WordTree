@@ -173,30 +173,18 @@ def menu(request, menu):
             })
         )
 
-#def menu_add_root(request):
-#    return menu_add(request, menu=None, child=None)
 
 @login_required
 @permission_required(['app.add_menu', 'app.add_submenu'])
 def menu_add(request, menu):
-    #raise Http404("Debugging: " + request.get_raw_uri() + " menu:" + menu + " child:" + child)
     # if this is a POST request we need to process the form data
     logger.info("menu_add('{0}', menu={1})".format(request.get_raw_uri(), menu))
     if request.method == 'POST':
         # create a form instance and populate it with data from the request
         form = AddMenu(request.POST)
         if form.is_valid():
-            parentid = form.cleaned_data['parent']
-            name = form.cleaned_data['name']
-
-            parentmenu = Menu.objects.get(id=int(parentid))
-
-            with transaction.atomic():
-                newmenu = Menu(name=name, data='')
-                newmenu.save()
-                submenu = Submenu(parent=parentmenu, child=newmenu)
-                submenu.save()
-
+            # discard the new id response here and redirect
+            api_impl_menu_add(parentid=form.cleaned_data['parent'], new_name=form.cleaned_data['name'])
             return redirect('/menu/{0}/'.format(form.cleaned_data['next']))
     else:
         # Retrieve the matching parent menu id being added to.
@@ -352,6 +340,23 @@ def menu_delete(request, menu):
             themenu.delete()
 
     return redirect('/menu/{0}/'.format('/'.join(menupath[0:-1])))
+
+
+@login_required
+@permission_required(['app.change_menu', 'app.change_submenu'])
+def move_next(request, menu):
+    pass
+
+@login_required
+@permission_required(['app.change_menu', 'app.change_submenu'])
+def move_prev(request, menu):
+    pass
+
+@login_required
+@permission_required(['app.change_menu', 'app.change_submenu'])
+def change_parent(request, menu):
+    pass
+
 
 
 class Tree(MenuItem):
