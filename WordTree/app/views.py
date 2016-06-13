@@ -12,6 +12,7 @@ import logging
 from datetime import datetime
 from app.models import Menu, Submenu
 from app.forms import AddMenu, EditMenu
+import app.api_impl as api
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -184,7 +185,7 @@ def menu_add(request, menu):
         form = AddMenu(request.POST)
         if form.is_valid():
             # discard the new id response here and redirect
-            api_impl_menu_add(parentid=form.cleaned_data['parent'], new_name=form.cleaned_data['name'])
+            api.menu_add(parentid=form.cleaned_data['parent'], new_name=form.cleaned_data['name'])
             return redirect('/menu/{0}/'.format(form.cleaned_data['next']))
     else:
         # Retrieve the matching parent menu id being added to.
