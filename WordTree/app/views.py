@@ -11,7 +11,7 @@ from django.db import transaction
 import logging
 from datetime import datetime
 from app.models import Menu, Submenu
-from app.forms import AddMenu, EditMenu
+from app.forms import AddMenu, EditMenu, ChangeParent
 import app.api_impl as api
 
 # Get an instance of a logger
@@ -22,8 +22,11 @@ THIS_APP_VERSION = [0,9,3]
 
 def render_app_page(**kwargs):
     try:
+        kwargs["context_instance"]['title'] = THIS_APP_NAME
         kwargs["context_instance"]["this_app_name"] = THIS_APP_NAME
         kwargs["context_instance"]["this_app_ver"] = '.'.join([str(x) for x in THIS_APP_VERSION])
+        kwargs["context_instance"]["year"] = datetime.now().year
+
     except KeyError:
         pass
     kwargs["template_name"] = "app/" + kwargs["template_name"]
@@ -111,7 +114,7 @@ def menu(request, menu):
             raise Http404("Invalid menu: '" + menu + "'")
 
     # and its children
-    children = api.gather_children(chosenmenu.id)
+    children = api.gather_children(parentid=chosenmenu.id)
 
     # Package the results in the appropriate structures
     return render_app_page(
@@ -120,10 +123,12 @@ def menu(request, menu):
         context_instance = RequestContext(
             request=request,
             dict_={
-                'title' : chosenmenu.name,
+                'menu' : chosenmenu.name,
                 'parent' : '/'.join(menupath[0:-1]),
-                'children' : children,
                 'depth' : depth,
+                'children' : children,
+                'last' : api.initialise_ordinals(children),
+                'order' : range(len(children))
             })
         )
 
@@ -233,7 +238,7 @@ def menu_delete(request, menu):
 
     # and delete all its descendants
     descendants = api.gather_all_descendants(chosenid=menuid, postorder=True)
-    descendants.append(api.ChildMenu(parentid=parentid, id=menuid, name=chosenmenu.name, data=chosenmenu.data))
+    descendants.append(api.ChildMenu(id=menuid, name=chosenmenu.name, data=chosenmenu.data, parentid=parentid))
 
     with transaction.atomic():
         for descendant in descendants:
@@ -259,24 +264,144 @@ def menu_delete(request, menu):
 @permission_required(['app.change_menu', 'app.change_submenu'])
 def move_next(request, menu):
     """
-    Swap ordinal position with next item in the parent menu's children.
+    Swap given menu item with next one in the parent menu's children.
     If at end, do nothing.
     Redisplay parent menu.
     """
+    menupath = menu.split("/")[0:-1]
+    if len(menupath) > 1:
+        # gather the children of this menu's parent.
+        children = api.gather_children(int(menupath[-2]))
+        # check the ordinal values and then initialise them if 0.
+        last = api.initialise_ordinals(children)
+        # iterate over the list and find a match for menupath[-1].
+        next = 0
+        with transaction.atomic():
+            for child in children:
+                if child.id == int(menupath[-1]):
+                    submenu = Submenu.objects.get(child=child.id)
+                    # if it is already the last one do nothing.
+                    if submenu.ordinal == last:
+                        break
+                    else:
+                        next = submenu.ordinal + 1
+                        submenu.ordinal = next
+                        submenu.save()
+                elif next > 0:
+                    # the previous iteration matched the item to be moved down,
+                    # so change this next item's ordinal accordingly.
+                    submenu = Submenu.objects.get(child=child.id)
+                    submenu.ordinal = next - 1
+                    submenu.save()
+                    break
+
+            return redirect('/menu/{0}/'.format('/'.join(menupath[0:-1])))
+    else:
+        # cannot reposition the root menu.
+        return redirect(menu)
 
 @login_required
 @permission_required(['app.change_menu', 'app.change_submenu'])
 def move_prev(request, menu):
     """
-    Swap ordinal position with previous item in the parent menu's children.
+    Swap given menu item with previous one in the parent menu's children.
     If at beginning, do nothing.
     Redisplay parent menu.
     """
+    menupath = menu.split("/")[0:-1] if menu else ['1']
+    if len(menupath) > 1:
+        # gather the children of this menu's parent.
+        children = api.gather_children(int(menupath[-2]))
+        # check the ordinal values and then initialise them if 0.
+        last = api.initialise_ordinals(children)
+        # iterate over the list and find a match for menupath[-1].
+        prev = 0
+        with transaction.atomic():
+            # traverse the child list backwards
+            # to preserve the move_next algorithm's pattern
+            # and to make it simpler to understand.
+            for child in reversed(children):
+                if child.id == int(menupath[-1]):
+                    submenu = Submenu.objects.get(child=child.id)
+                    # if it is already the first one do nothing.
+                    if submenu.ordinal == 1:
+                        break
+                    else:
+                        prev = submenu.ordinal - 1
+                        submenu.ordinal = prev
+                        submenu.save()
+                elif prev > 0:
+                    # the previous iteration matched the item to be moved up,
+                    # so change this next item's ordinal accordingly.
+                    submenu = Submenu.objects.get(child=child.id)
+                    submenu.ordinal = prev + 1
+                    submenu.save()
+                    break
+
+            return redirect('/menu/{0}/'.format('/'.join(menupath[0:-1])))
+    else:
+        # cannot reposition the root menu.
+        return redirect(menu)
 
 @login_required
-@permission_required(['app.change_menu', 'app.change_submenu'])
+@permission_required(['app.change_submenu'])
 def change_parent(request, menu):
-    pass
+    """
+    Display the edit parent form that allows altering the parent id directly.
+    """
+    logger.info("menu_change_parent('{0}', menu={1})".format(request.get_raw_uri(), menu))
+
+    # if this is a POST request we need to process the form data
+    if request.method == 'POST':
+        # create a form instance and populate it with data from the request
+        form = ChangeParent(request.POST)
+        if form.is_valid():
+            menuid = form.cleaned_data['id']
+            parentid = form.cleaned_data['parentid']
+            with transaction.atomic():
+                submenu = Submenu.objects.get(child=int(menuid))
+                parent = Menu.objects.get(id=int(parentid))
+                submenu.parent = parent
+                submenu.save()
+            # redirect to new parent menu.
+            try:
+                ancestors = api.gather_ancestors(menuid=parent.id)
+            except Submenu.DoesNotExist:
+                return Http404('Missing menu item')
+            parents = []
+            for ancestor in ancestors:
+                parents.append(str(ancestor.id))
+            target_fragment = '/menu/{0}/'.format('/'.join(parents))
+            return redirect(target_fragment)
+    else:
+        try:
+            # Retrieve the matching menu id being edited.
+            menupath = menu.split("/")[0:-1]
+            menuid = int(menupath[-1])
+            if menuid == 1:
+                # Do nothing. Do not edit the root node.
+                return redirect('/menu/1/')
+
+            chosenmenu = Menu.objects.get(id=menuid)
+
+        except ValueError:
+            raise Http404("No menu matching: " + request.get_raw_uri() + "menu: " + menu)
+
+        except Menu.DoesNotExist:
+            raise Http404("Invalid menu: '" + menu)
+
+        # Initialise the form with this menu's details
+        form = ChangeParent({
+            'id':menupath[-1],
+            'name':chosenmenu.name,
+            'parentid':menupath[-2]
+        })
+
+    return render_app_page(
+        request=request,
+        template_name='menu_change_parent.html',
+        context={'form':form}
+        )
 
 @login_required
 def menu_report(request):

@@ -81,6 +81,7 @@
     <Content Include="app\static\app\images\shop-store-frontal-building.png" />
     <Content Include="app\templates\app\menu_add.html" />
     <Content Include="app\templates\app\menu.html" />
+    <Content Include="app\templates\app\menu_change_parent.html" />
     <Content Include="app\templates\app\menu_edit.html" />
     <Content Include="run.cmd">
       <Publish>True</Publish>

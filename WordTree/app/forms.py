@@ -27,3 +27,8 @@ class EditMenu(forms.Form):
     id = forms.IntegerField(label='Id', widget=forms.NumberInput(attrs={'readonly':'readonly'}))
     name = forms.CharField(label='Menu', help_text='Enter the menu name', max_length=50, widget=forms.TextInput(attrs={'autofocus':'autofocus'}))
     next = forms.CharField(widget=forms.HiddenInput())
+
+class ChangeParent(forms.Form):
+    id = forms.IntegerField(label='Id', widget=forms.NumberInput(attrs={'readonly':'readonly'}))
+    name = forms.CharField(label='Menu', max_length=50, widget=forms.TextInput(attrs={'readonly':'readonly'}))
+    parentid = forms.IntegerField(label='ParentId', help_text='Enter the new parent id', widget=forms.NumberInput(attrs={'autofocus':'autofocus'}))
