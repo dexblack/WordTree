@@ -38,10 +38,10 @@ class ChildMenu(MenuItem):
         return "{'parent':{0}, 'id':{1}, 'name':{2}, 'data':{3} }".format(self.parent, str(super(ChildMenu, self)))
 
 def gather_children(parentid):
-    '''
+    """
     Returns a list of ChildMenu objects which are
     the direct first level descendants of Menu 'parentid'.
-    '''
+    """
     # parentid must be > 0.
     if parentid < 1:
         return []
@@ -148,9 +148,11 @@ def build_report():
     report['tree'] = build_tree(report, id=1)
     return report
 
-# Permissions checks will already have been done
-# This is an implementation only, never exposed directly.
 def menu_add(parentid, new_name):
+    """
+    Add new_name item to the menu parentid.
+    Return JSON response with new id and name.
+    """
     logger.info("api_impl.menu_add(parentid={0}, new_name='{1}')".format(parentid, new_name))
 
     parentmenu = Menu.objects.get(id=int(parentid))

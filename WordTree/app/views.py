@@ -258,20 +258,20 @@ def menu_delete(request, menu):
 @login_required
 @permission_required(['app.change_menu', 'app.change_submenu'])
 def move_next(request, menu):
-    '''
+    """
     Swap ordinal position with next item in the parent menu's children.
     If at end, do nothing.
     Redisplay parent menu.
-    '''
+    """
 
 @login_required
 @permission_required(['app.change_menu', 'app.change_submenu'])
 def move_prev(request, menu):
-    '''
+    """
     Swap ordinal position with previous item in the parent menu's children.
     If at beginning, do nothing.
     Redisplay parent menu.
-    '''
+    """
 
 @login_required
 @permission_required(['app.change_menu', 'app.change_submenu'])
