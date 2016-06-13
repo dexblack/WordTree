@@ -2,12 +2,15 @@
 {% load staticfiles %}
 {% block content %}
 
-<h2>{{ title }}.</h2>
+<h2>{{ title }}</h2>
 {% if depth > 1 %}<a href="/menu/{{ parent }}/"><img src="{% static 'app/images/arrow_up_48.png' %}" width="24px" /></a>{% endif %}
 <ul class="list-nobullet">{% for child in children %}
 <li><a href="{{ child.id }}"> {{ child.name }} [id={{ child.id }}]</a>
+<a href="{{ child.id }}/move_prev"><img src="{% static 'app/images/arrow_up_green_48.png' %}" width="16px" /></a>
+<a href="{{ child.id }}/move_next"><img src="{% static 'app/images/arrow_down_green_48.png' %}" width="16px" /></a>
 <a href="{{ child.id }}/delete" onclick="return confirm('Are you sure you want to delete {{ child.name }}?')"><img src="{% static 'app/images/cross_48.png' %}" width="16px" /></a>
 <a href="{{ child.id }}/edit"><img src="{% static 'app/images/pencil_48.png' %}" width="16px" /></a>
+<!--<a href="{{ child.id }}/change_parent"><img src="{% static 'app/images/change_parent_48.png' %}" width="16px" /></a>-->
 </li>{% endfor %}</ul>
 {% if depth < 6 %}<a href="add"><img src="{% static 'app/images/add_48.png' %}" width="24px" /></a>{% endif %}
 {% endblock %}
