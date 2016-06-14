@@ -361,7 +361,10 @@ def change_parent(request, menu):
             with transaction.atomic():
                 submenu = Submenu.objects.get(child=int(menuid))
                 parent = Menu.objects.get(id=int(parentid))
+                # adjust ordinal to put this new item at the end.
+                ordinal = len(api.gather_children(parentid=parentid)) + 1
                 submenu.parent = parent
+                submenu.ordinal = ordinal
                 submenu.save()
             # redirect to new parent menu.
             try:

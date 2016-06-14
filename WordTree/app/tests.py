@@ -241,11 +241,11 @@ class MenuOperationTests(TestCase):
         id5 = self.api_menu_add_item('/'.join(['1', str(id2), str(id4)]), 'M5')
         # The returned structure has an implicit root node 'id':'1', 'name':'RU App'
         return {THE_APP_NAME:'1', 'children': [
-                {'M1':str(id1), 'children': [
-                 {'M3':str(id3) } ] },
-                {'M2':str(id2), 'children': [
-                 {'M4':str(id4), 'children': [
-                  {'M5':str(id5) }] }] }] }
+                {'M1':id1, 'children': [
+                 {'M3':id3 } ] },
+                {'M2':id2, 'children': [
+                 {'M4':id4, 'children': [
+                  {'M5':id5 }] }] }] }
 
     def test_menu_change_parent(self):
         c='children'
@@ -255,23 +255,25 @@ class MenuOperationTests(TestCase):
         m5id = themenu[c][1][c][0][c][0]['M5']
 
         m5url = '/menu/{0}/change_parent/'.format('/'.join(
-            [themenu[THE_APP_NAME],
+            [str(i) for i in [themenu[THE_APP_NAME],
              themenu[c][1]['M2'],
              themenu[c][1][c][0]['M4'],
-             m5id]))
+             m5id]]))
 
         # to new parent M1
-        m1id = themenu['children'][0]['M1']
+        m1id = themenu[c][0]['M1']
         m1url = '/menu/{0}/'.format('/'.join(
-            [themenu[THE_APP_NAME],
-             themenu[c][0]['M1']]))
+            [str(i) for i in [themenu[THE_APP_NAME],themenu[c][0]['M1']]]))
 
-        response_post_edit = self.client.post(m5url, {'id':m5id, 'name':'M2', 'parentid':m1id})
+        response_post_edit = self.client.post(m5url, {'id':str(m5id), 'name':'M5', 'parentid':str(m1id)})
         self.assertEqual(response_post_edit.status_code, 302)
         self.assertEqual(response_post_edit.url, m1url)
         # Check the update actually worked
         # by verifying that M5 appears in menu M1 now
         response_get2 = self.client.get(m1url)
         self.assertContains(response_get2, 'M5', 2, 200)
-
-
+        # Verify that the ordinal of M5 was adjusted correctly.
+        children = gather_children(m1id)
+        self.assertEqual(children[1].id, m5id)
+        self.assertEqual(children[1].name, 'M5')
+        self.assertEqual(children[1].ordinal, 2)
