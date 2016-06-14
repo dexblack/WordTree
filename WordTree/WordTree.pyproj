@@ -73,8 +73,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="app\static\app\images\add_48.png" />
+    <Content Include="app\static\app\images\arrow_down_green_48.png" />
     <Content Include="app\static\app\images\arrow_left_48.png" />
     <Content Include="app\static\app\images\arrow_up_48.png" />
+    <Content Include="app\static\app\images\arrow_up_green_48.png" />
+    <Content Include="app\static\app\images\change_parent_48.png" />
     <Content Include="app\static\app\images\cross_48.png" />
     <Content Include="app\static\app\images\favicon.ico" />
     <Content Include="app\static\app\images\pencil_48.png" />
