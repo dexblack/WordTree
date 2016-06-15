@@ -162,15 +162,34 @@ class MenuOperationTests(TestCase):
             escaped_name = custom_escape(name)
             self.assertContains(response_get, escaped_name, 1, 200)
 
+    def menu_delete_setup(self):
+        id1 = self.api_menu_add_item('1', 'D1')
+        id1url = '/'.join([str(i) for i in ['1', str(id1)]])
+        id2 = self.api_menu_add_item(id1url, 'D2')
+        id3 = self.api_menu_add_item(id1url, 'D3')
+        id4 = self.api_menu_add_item(id1url, 'D4')
+        return ['1', id1, id2, id3, id4]
+
     def test_menu_delete(self):
-        self.test_menu_add()
+        id = self.menu_delete_setup()
         # Delete new menu item.
-        response_del = self.client.get('/menu/1/2/delete/')
+        id3path = [str(i) for i in [id[0],id[1],id[3]]]
+        id3url = '/'.join(id3path)
+        response_del = self.client.get('/menu/{0}/delete/'.format(id3url))
         self.assertEqual(response_del.status_code, 302)
-        self.assertEqual(response_del.url, '/menu/1/')
+        self.assertEqual(response_del.url, '/menu/1/{0}/'.format(str(id[1])))
         # Check that it is really gone.
-        response_get2 = self.client.get('/menu/1/2/')
+        response_get2 = self.client.get('/menu/{0}/'.format(id3url))
         self.assertEqual(response_get2.status_code, 404)
+        # Verify that the ordinal of D2 is the same and
+        # the ordinal of D3 was adjusted correctly.
+        children = gather_children(id[1])
+        self.assertEqual(children[0].id, id[2])
+        self.assertEqual(children[0].name, 'D2')
+        self.assertEqual(children[0].ordinal, 1)
+        self.assertEqual(children[1].id, id[4])
+        self.assertEqual(children[1].name, 'D4')
+        self.assertEqual(children[1].ordinal, 2)
 
     def test_menu_edit(self):
         self.test_menu_add()

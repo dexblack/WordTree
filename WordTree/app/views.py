@@ -229,6 +229,7 @@ def menu_delete(request, menu):
         # Retrieve the corresponding Menu object.
         # This also ensures we're deleting an existing item.
         chosenmenu = Menu.objects.get(id=menuid)
+        chosensubmenu = Submenu.objects.get(child_id=chosenmenu.id)
 
     except ValueError:
         raise Http404("No menu matching: " + request.get_raw_uri() + "menu: " + menu)
@@ -245,10 +246,8 @@ def menu_delete(request, menu):
             # First find the parent Menu
             parentmenu = Menu.objects.get(id=descendant.parentid)
             # Select the matching Submenu record.
-            submenus = Submenu.objects.filter(parent=parentmenu, child_id=descendant.id)
+            submenu = Submenu.objects.get(child_id=descendant.id)
             # There should only be one.
-            assert(len(submenus)==1)
-            submenu = submenus[0]
             logger.info('Deleting Submenu: parent:{0} id:{1}'.format(parentmenu.id, submenu.child.id))
             submenu.delete()
             # Select the matching Menu record for that child.
@@ -256,6 +255,9 @@ def menu_delete(request, menu):
             logger.info('Deleting Menu: {0} {1}'.format(themenu.id, themenu.name))
             # Again there ought to be only one.
             themenu.delete()
+
+        # Adjust ordinals of the parent's children.
+        api.initialise_ordinals_of(parentid, startat=chosensubmenu.ordinal)
 
     return redirect('/menu/{0}/'.format('/'.join(menupath[0:-1])))
 
@@ -270,9 +272,8 @@ def move_next(request, menu):
     """
     menupath = menu.split("/")[0:-1]
     if len(menupath) > 1:
-        # gather the children of this menu's parent.
+        # get the ordering right
         children = api.gather_children(int(menupath[-2]))
-        # check the ordinal values and then initialise them if 0.
         last = api.initialise_ordinals(children)
         # iterate over the list and find a match for menupath[-1].
         next = 0
