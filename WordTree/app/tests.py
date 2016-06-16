@@ -150,10 +150,20 @@ class MenuOperationTests(TestCase):
         # This return value allows for writing adaptive tests.
         return response_json['id']
 
+    def menu_setup(self):
+        try:
+            rootmenu = Menu.objects.get(id=1)
+        except Menu.DoesNotExist:
+            rootmenu = Menu.objects.create(name=THE_APP_NAME, data='')
+        return rootmenu
+
     def test_menu_add(self):
         self.menu_add_item('1', 'Add1')
 
     def test_api_menu_add(self):
+        rootmenu = self.menu_setup()
+        rootid = str(rootmenu.id)
+
         names = ["Add &<>:' -2", 'Add 1']
         for name in names:
             id = self.api_menu_add_item('1', name)
@@ -163,12 +173,15 @@ class MenuOperationTests(TestCase):
             self.assertContains(response_get, escaped_name, 1, 200)
 
     def menu_delete_setup(self):
-        id1 = self.api_menu_add_item('1', 'D1')
-        id1url = '/'.join([str(i) for i in ['1', str(id1)]])
+        rootmenu = self.menu_setup()
+        rootid = str(rootmenu.id)
+
+        id1 = self.api_menu_add_item(rootid, 'D1')
+        id1url = '/'.join([str(i) for i in [rootid, str(id1)]])
         id2 = self.api_menu_add_item(id1url, 'D2')
         id3 = self.api_menu_add_item(id1url, 'D3')
         id4 = self.api_menu_add_item(id1url, 'D4')
-        return ['1', id1, id2, id3, id4]
+        return [rootid, id1, id2, id3, id4]
 
     def test_menu_delete(self):
         id = self.menu_delete_setup()
@@ -177,7 +190,7 @@ class MenuOperationTests(TestCase):
         id3url = '/'.join(id3path)
         response_del = self.client.get('/menu/{0}/delete/'.format(id3url))
         self.assertEqual(response_del.status_code, 302)
-        self.assertEqual(response_del.url, '/menu/1/{0}/'.format(str(id[1])))
+        self.assertEqual(response_del.url, '/menu/{0}/'.format('/'.join([str(id[0]), str(id[1])])))
         # Check that it is really gone.
         response_get2 = self.client.get('/menu/{0}/'.format(id3url))
         self.assertEqual(response_get2.status_code, 404)
@@ -205,6 +218,9 @@ class MenuOperationTests(TestCase):
         self.assertContains(response_get2, 'Edit1', 1, 200)
 
     def setup_for_move_tests(self):
+        rootmenu = self.menu_setup()
+        rootid = str(rootmenu.id)
+
         id1 = self.api_menu_add_item('1', 'Test')
         id2 = self.api_menu_add_item(str(id1), 'Add1')
         id3 = self.api_menu_add_item(str(id1), 'Add2')
@@ -217,7 +233,7 @@ class MenuOperationTests(TestCase):
         self.assertEqual(children[1].name, 'Add2')
         self.assertEqual(children[1].ordinal, 2)
 
-        return ['1', id1, id2, id3]
+        return [rootid, id1, id2, id3]
 
     def verify_move(self, id):
         children = gather_children(id[1])
@@ -253,13 +269,16 @@ class MenuOperationTests(TestCase):
         # /M2
         #  /M4
         #   /M5
+        rootmenu = self.menu_setup()
+        rootid = str(rootmenu.id)
+
         id1 = self.api_menu_add_item('1', 'M1')
         id2 = self.api_menu_add_item('1', 'M2')
         id3 = self.api_menu_add_item('/'.join(['1', str(id1)]), 'M3')
         id4 = self.api_menu_add_item('/'.join(['1', str(id2)]), 'M4')
         id5 = self.api_menu_add_item('/'.join(['1', str(id2), str(id4)]), 'M5')
         # The returned structure has an implicit root node 'id':'1', 'name':'RU App'
-        return {THE_APP_NAME:'1', 'children': [
+        return {rootmenu.name:rootid, 'children': [
                 {'M1':id1, 'children': [
                  {'M3':id3 } ] },
                 {'M2':id2, 'children': [
