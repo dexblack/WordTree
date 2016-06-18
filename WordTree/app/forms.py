@@ -31,4 +31,4 @@ class EditMenu(forms.Form):
 class ChangeParent(forms.Form):
     id = forms.IntegerField(label='Id', widget=forms.NumberInput(attrs={'readonly':'readonly'}))
     name = forms.CharField(label='Menu', max_length=50, widget=forms.TextInput(attrs={'readonly':'readonly'}))
-    parentid = forms.IntegerField(label='ParentId', help_text='Enter the new parent id', widget=forms.NumberInput(attrs={'autofocus':'autofocus'}))
+    parentid = forms.IntegerField(label='ParentId', help_text='Enter the new parent id', widget=forms.NumberInput(attrs={'min':1, 'max':32767, 'autofocus':'autofocus'}))
