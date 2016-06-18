@@ -47,6 +47,9 @@ def gather_ancestors(menuid):
     """
     ancestors = [MenuItem(id=1,name='',data='')] # Root menu is the ancestor of all.
     while True:
+        if menuid == 1:
+            # root node is already there so stop iterating.
+            break
         submenu = Submenu.objects.get(child=int(menuid))
         # Here we don't care about the name so we don't look it up.
         # For extra certainty the lookup ought to be done anyway.
@@ -54,9 +57,6 @@ def gather_ancestors(menuid):
         menuitem = MenuItem(id=menuid, name='', data='')
         ancestors.append(menuitem)
         menuid = submenu.parent.id
-        if menuid == 1:
-            # root node is already there so stop iterating.
-            break
 
     return ancestors
 
