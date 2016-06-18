@@ -371,7 +371,7 @@ def change_parent(request, menu):
             try:
                 ancestors = api.gather_ancestors(menuid=parent.id)
             except Submenu.DoesNotExist:
-                return Http404('Missing menu item')
+                raise Http404('Missing menu item')
             parents = []
             for ancestor in ancestors:
                 parents.append(str(ancestor.id))
