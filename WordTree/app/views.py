@@ -18,7 +18,7 @@ import app.api_impl as api
 logger = logging.getLogger(__name__)
 
 THIS_APP_NAME = 'Editor Prototype'
-THIS_APP_VERSION = [0,9,4]
+THIS_APP_VERSION = [0,9,5]
 
 def render_app_page(**kwargs):
     try:
