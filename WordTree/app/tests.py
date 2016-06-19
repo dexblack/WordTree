@@ -315,3 +315,33 @@ class MenuOperationTests(TestCase):
         self.assertEqual(children[1].id, m5id)
         self.assertEqual(children[1].name, 'M5')
         self.assertEqual(children[1].ordinal, 2)
+
+    def test_menu_change_parent_to_root(self):
+        c='children'
+        themenu = self.create_menu_structure()
+        # Retrieve the change parent form.
+        # moving M5
+        m5id = themenu[c][1][c][0][c][0]['M5']
+
+        m5url = '/menu/{0}/change_parent/'.format('/'.join(
+            [str(i) for i in [themenu[THE_APP_NAME],
+             themenu[c][1]['M2'],
+             themenu[c][1][c][0]['M4'],
+             m5id]]))
+
+        # to the root menu
+        rooturl = '/menu/1/'
+
+        response_post_edit = self.client.post(m5url, {'id':str(m5id), 'name':'M5', 'parentid':'1'})
+        self.assertEqual(response_post_edit.status_code, 302)
+        self.assertEqual(response_post_edit.url, rooturl)
+        # Check the update actually worked
+        # by verifying that M5 appears in menu M1 now
+        response_get2 = self.client.get(rooturl)
+        self.assertContains(response_get2, 'M5', 2, 200)
+        # Verify that the ordinal of M5 was adjusted correctly.
+        children = gather_children(1)
+        last = len(children) - 1
+        self.assertEqual(children[last].id, m5id)
+        self.assertEqual(children[last].name, 'M5')
+        self.assertEqual(children[last].ordinal, 3)
