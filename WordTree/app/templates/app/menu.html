@@ -13,5 +13,5 @@
 <a href="{{ child.id }}/edit" title="Modify Name"><img src="{% static 'app/images/pencil_48.png' %}" width="16px" /></a>
 <a href="{{ child.id }}" title="[id={{ child.id }}, ordinal={{ child.ordinal }}]"> {{ child.name }}</a>
 </li>{% endfor %}</ul>
-{% if depth < 6 %}<a href="add" title="Add a new menu item"><img src="{% static 'app/images/add_48.png' %}" width="24px" /></a>{% endif %}
+{% if depth < 7 %}<a href="add" title="Add a new menu item"><img src="{% static 'app/images/add_48.png' %}" width="24px" /></a>{% endif %}
 {% endblock %}
