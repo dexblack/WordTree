@@ -6,6 +6,7 @@ when you run "manage.py test".
 import django
 django.setup()
 
+from django.http import JsonResponse
 from django.test import TestCase
 from django.utils.http import urlquote
 from django.contrib.auth.models import User
@@ -28,7 +29,9 @@ def custom_escape(s):
     return escape(s, entities)
 
 class ImplementationTests(TestCase):
-
+    """
+    Verify the basic item types
+    """
     def test_MenuItem(self):
         """
         Confirm the operation of MenuItem.__str__()
@@ -44,8 +47,9 @@ class ImplementationTests(TestCase):
         self.assertEqual(str(menuitem), "{'id': 2, 'name': 'A', 'data': 'D', 'parentid': 1, 'ordinal': 3}")
 
 class ViewTests(TestCase):
-    """Tests for the simple application views."""
-
+    """
+    Tests for the simple application views.
+    """
     if django.VERSION[:2] >= (1, 7):
         # Django 1.7 requires an explicit setup() when running tests in PTVS
         @classmethod
@@ -70,7 +74,9 @@ class ViewTests(TestCase):
 
 
 class MenuTests(TestCase):
-    """Tests for the menu views."""
+    """
+    Tests for the menu views.
+    """
     def setUp(self):
         self.user = User.objects.create_user('dex2', 'dex@gmail.com', 'dex2')
 
@@ -81,7 +87,6 @@ class MenuTests(TestCase):
     def test_no_submenu(self):
         with self.assertRaises(Submenu.DoesNotExist):
             Submenu.objects.get(child=9999)
-
 
     def test_menu_anonymous(self):
         """Tests the menu/1 page. With anonymous access, i.e. no login."""
@@ -95,24 +100,32 @@ class MenuTests(TestCase):
         self.assertContains(response, THE_APP_NAME, 1, 200)
 
 
-class MenuOperationTests(TestCase):
+class MenuTestCase(TestCase):
     """
-    Tests for the menu operations.
-    'add_menu','add_submenu'
-    'change_menu','change_submenu'
-    'delete_menu','delete_submenu'
-
-    19|7|add_menu|Can add menu
-    20|7|change_menu|Can change menu
-    21|7|delete_menu|Can delete menu
-    22|8|add_submenu|Can add submenu
-    23|8|change_submenu|Can change submenu
-    24|8|delete_submenu|Can delete submenu
+    Test setup and configuration shared methods.
     """
     def setUp(self):
         # Every test needs specific user access permissions.
         self.user = User.objects.create_user('dex2', 'dex@gmail.com', 'dex2')
         self.user.user_permissions.add(19,20,21,22,23,24) # See list above in doc string.
+
+    def menu_setup(self):
+        try:
+            rootmenu = Menu.objects.get(id=1)
+        except Menu.DoesNotExist:
+            rootmenu = Menu.objects.create(name=THE_APP_NAME, data='')
+        return rootmenu
+
+    def menu_delete_setup(self):
+        rootmenu = self.menu_setup()
+        rootid = str(rootmenu.id)
+
+        id1 = self.api_menu_add_item(rootid, 'D1')
+        id1url = '/'.join([str(i) for i in [rootid, str(id1)]])
+        id2 = self.api_menu_add_item(id1url, 'D2')
+        id3 = self.api_menu_add_item(id1url, 'D3')
+        id4 = self.api_menu_add_item(id1url, 'D4')
+        return [rootid, id1, id2, id3, id4]
 
     def menu_add_item(self, parent, name):
         self.assertTrue(self.client.login(username='dex2', password='dex2'))
@@ -139,7 +152,7 @@ class MenuOperationTests(TestCase):
         self.assertIn('_auth_user_id', self.client.session)
 
         # Add a new menu item to the given parent menu.
-        response_post_add = self.client.post('/menu/{0}/api_add/?name={1}'.format(parent, urlquote(name)))
+        response_post_add = self.client.post('/api/{0}/add/?name={1}'.format(parent, urlquote(name)))
         response_json = json.loads(response_post_add.content.decode('utf-8'))
         # Check that the JSON response text contains the expected two field names and the new name.
         self.assertEqual(response_json['name'], name)
@@ -150,38 +163,23 @@ class MenuOperationTests(TestCase):
         # This return value allows for writing adaptive tests.
         return response_json['id']
 
-    def menu_setup(self):
-        try:
-            rootmenu = Menu.objects.get(id=1)
-        except Menu.DoesNotExist:
-            rootmenu = Menu.objects.create(name=THE_APP_NAME, data='')
-        return rootmenu
 
+class MenuOperationTests(MenuTestCase):
+    """
+    Tests for the menu operations.
+    'add_menu','add_submenu'
+    'change_menu','change_submenu'
+    'delete_menu','delete_submenu'
+
+    19|7|add_menu|Can add menu
+    20|7|change_menu|Can change menu
+    21|7|delete_menu|Can delete menu
+    22|8|add_submenu|Can add submenu
+    23|8|change_submenu|Can change submenu
+    24|8|delete_submenu|Can delete submenu
+    """
     def test_menu_add(self):
         self.menu_add_item('1', 'Add1')
-
-    def test_api_menu_add(self):
-        rootmenu = self.menu_setup()
-        rootid = str(rootmenu.id)
-
-        names = ["Add &<>:' -2", 'Add 1']
-        for name in names:
-            id = self.api_menu_add_item('1', name)
-            # Check the new menu item now exists at the correct URL.
-            response_get = self.client.get('/menu/1/{0}/'.format(id))
-            escaped_name = custom_escape(name)
-            self.assertContains(response_get, escaped_name, 1, 200)
-
-    def menu_delete_setup(self):
-        rootmenu = self.menu_setup()
-        rootid = str(rootmenu.id)
-
-        id1 = self.api_menu_add_item(rootid, 'D1')
-        id1url = '/'.join([str(i) for i in [rootid, str(id1)]])
-        id2 = self.api_menu_add_item(id1url, 'D2')
-        id3 = self.api_menu_add_item(id1url, 'D3')
-        id4 = self.api_menu_add_item(id1url, 'D4')
-        return [rootid, id1, id2, id3, id4]
 
     def test_menu_delete(self):
         id = self.menu_delete_setup()
@@ -345,3 +343,126 @@ class MenuOperationTests(TestCase):
         self.assertEqual(children[last].id, m5id)
         self.assertEqual(children[last].name, 'M5')
         self.assertEqual(children[last].ordinal, 3)
+
+
+class ApiTests(MenuTestCase):
+    '''
+    api/* end point tests.
+    '''
+    def test_menu_add(self):
+        rootmenu = self.menu_setup()
+        rootid = str(rootmenu.id)
+
+        names = [
+            "Add &<>:' -2",
+            'Add 1'
+            ]
+        for name in names:
+            id = self.api_menu_add_item(rootid, name)
+            # Check the new menu item now exists at the correct URL.
+            response_get = self.client.get('/menu/1/{0}/'.format(id))
+            escaped_name = custom_escape(name)
+            self.assertContains(response_get, escaped_name, 1, 200)
+
+    def menu_setup2(self):
+        # D1
+        #  D2
+        #    D5
+        #    D6
+        #  D3
+        #    D7
+        #    D8
+        #  D4
+        #    D9
+        #
+        menuIds = self.menu_delete_setup()
+        # [rootid, id1, id2, id3, id4]
+        rootid = str(menuIds[0])
+
+        id1url = '/'.join([str(i) for i in [rootid, str(menuIds[1])]])
+        id2url = '/'.join([str(i) for i in [rootid, str(menuIds[1]), str(menuIds[2])]])
+        id5 = self.api_menu_add_item(id2url, 'D5')
+        id6 = self.api_menu_add_item(id2url, 'D6')
+        id3url = '/'.join([str(i) for i in [rootid, str(menuIds[1]), str(menuIds[3])]])
+        id7 = self.api_menu_add_item(id3url, 'D7')
+        id8 = self.api_menu_add_item(id3url, 'D8')
+        id4url = '/'.join([str(i) for i in [rootid, str(menuIds[1]), str(menuIds[4])]])
+        id9 = self.api_menu_add_item(id4url, 'D9')
+        return [rootid, menuIds[1], menuIds[2], menuIds[3], menuIds[4], id5, id6, id7, id8, id9]
+
+    def test_menu_get(self):
+        menuIds = self.menu_setup2()
+        rootid = str(menuIds[0])
+        expectation = JsonResponse({
+            'id': 0,
+            'name': '',
+            'ordinal': 0,
+            'data': None,
+            'submenu': [
+                {
+                'id': 1,
+                'name': '',
+                'ordinal': 0,
+                'data': None,
+                'submenu': [
+                    {
+                    'id': 0,
+                    'name': '',
+                    'ordinal': 0,
+                    'data': None,
+                    'submenu': [
+                        ]
+                    },
+                    {
+                    'id': 0,
+                    'name': '',
+                    'ordinal': 0,
+                    'data': None,
+                    'submenu': [
+                        ]
+                    }
+                    ]
+                },
+                {
+                'id': 0,
+                'name': '',
+                'ordinal': 0,
+                'data': None,
+                'submenu': [
+                    {
+                    'id': 0,
+                    'name': '',
+                    'ordinal': 0,
+                    'data': None,
+                    'submenu': [
+                        ]
+                    },
+                    {
+                    'id': 0,
+                    'name': '',
+                    'ordinal': 0,
+                    'data': None,
+                    'submenu': [
+                        ]
+                    }
+                    ]
+                },
+                {
+                'id': 0,
+                'name': '',
+                'ordinal': 0,
+                'data': None,
+                'submenu': [
+                    {
+                    'id': 0,
+                    'name': '',
+                    'ordinal': 0,
+                    'data': None,
+                    'submenu': [
+                        ]
+                    }
+                    ]
+                }
+                ]
+            })
+

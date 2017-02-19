@@ -22,3 +22,4 @@ class Submenu(models.Model):
 
     def __unicode__(self):
         return u'{ "parent_id": %d, "child_id": %d, "ordinal": %d }' % (self.parent.id, self.child.id, self.ordinal)
+

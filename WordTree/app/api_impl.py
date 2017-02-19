@@ -133,12 +133,13 @@ class Tree(MenuItem):
         return str(super(Tree, self))
 
 
-def build_tree(report, id):
+def build_tree(report, id, depth=0):
     """
     Creates a Tree from the Menu/Submenu data.
     Counts the nodes as it traverses them.
 
     id: The menu item at which to begin the traversal.
+    depth: -1 == all, 0 == root only, N>0 == N levels of child nodes
     """
     try:
         menu = Menu.objects.get(id=id)
@@ -151,12 +152,13 @@ def build_tree(report, id):
     # Increment the count of nodes.
     report['count'] = report['count'] + 1
 
-    # Traverse the children
-    submenus = gather_children(parentid=id)
-    for submenu in submenus:
-        branch = build_tree(report, id=int(submenu.id))
-        # Add each branch to the tree.
-        tree.branches.append(branch)
+    if depth != 0:
+        # Traverse the children
+        submenus = gather_children(parentid=id)
+        for submenu in submenus:
+            branch = build_tree(report, id=int(submenu.id), depth=(depth-1))
+            # Add each branch to the tree.
+            tree.branches.append(branch)
 
     return tree
 
@@ -220,3 +222,30 @@ def initialise_ordinals_of(parentid, startat=0):
     # Gthe children of this menu's parent and
     # set ordinal values if they are 0.
     initialise_ordinals(gather_children(parentid), startat=startat)
+
+def dictFromTree(tree):
+    submenu = []
+    for branch in tree.branches:
+        submenu.append(dictFromTree(branch))
+
+    response = {
+        'id': tree.id,
+        'name': tree.name,
+        'ordinal': tree.ordinal,
+        'submenu': submenu
+        }
+    return response
+
+def menu_get(parentid, depth):
+    """
+    Construct a JSON response describing the tree starting at node parentid
+    and proceeding to depth levels of children.
+    """
+    # Don't count the root node. Set count to -1 initially.
+    report = { 'tree': None, 'count': -1 }
+    # build_tree_from only updates the count member.
+    tree = build_tree(report, id=1, depth=depth)
+    report['tree'] = tree
+    # Traverse tree and build the required dictionary.
+    response = dictFromTree(tree)
+    return JsonResponse(response)
