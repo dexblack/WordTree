@@ -9,6 +9,7 @@ MY_DEBUGGING_ = True
 DEBUG = MY_DEBUGGING_
 
 ALLOWED_HOSTS = (
+    'tru.dexblack.net',
     'localhost',
 )
 
@@ -195,3 +196,5 @@ CSRF_COOKIE_SECURE = not MY_DEBUGGING_
 
 #CSRF_TRUSTED_ORIGINS = [ 'localhost' ]
 #CSRF_COOKIE_DOMAIN = 'localhost'
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
